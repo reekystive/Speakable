@@ -4,7 +4,7 @@ import UserNotifications
 
 /// Service Provider that handles the macOS Services menu integration
 final class TTSServiceProvider: NSObject {
-  private let maxCharacters = 4096
+  private var currentTask: Task<Void, Never>?
 
   /// Called by macOS Services when user selects "Speak with OpenAI"
   /// This method name must match NSMessage in Info.plist
@@ -30,57 +30,50 @@ final class TTSServiceProvider: NSObject {
       return
     }
 
-    // Start TTS in background
-    Task {
-      await performTTS(text: text)
+    // Cancel any ongoing task and stop playback immediately
+    currentTask?.cancel()
+    StreamingAudioPlayer.shared.stop()
+
+    // Start new TTS task
+    currentTask = Task.detached { [weak self] in
+      await self?.performTTS(text: text)
     }
   }
 
   private func performTTS(text: String) async {
     let settings = SettingsManager.shared
     let client = OpenAIClient.shared
-    let player = AudioPlayer.shared
+
+    let instructions = settings.selectedModel.supportsInstructions ? settings.voiceInstructions : nil
+
+    // Update state to loading (use DispatchQueue to avoid focus issues)
+    DispatchQueue.main.async {
+      StreamingAudioPlayer.shared.state = .loading
+    }
 
     do {
-      showNotification(title: "OpenAI TTS", body: "Generating speech...")
+      // Check if cancelled before making API call
+      try Task.checkCancellation()
 
-      let audioData: [Data]
+      let stream = try await client.generateSpeechStream(
+        text: text,
+        voice: settings.selectedVoice,
+        model: settings.selectedModel,
+        speed: settings.speechSpeed,
+        instructions: instructions
+      )
 
-      if text.count > maxCharacters {
-        // Split long text into chunks
-        audioData = try await client.generateSpeechChunked(
-          text: text,
-          voice: settings.selectedVoice,
-          model: settings.selectedModel,
-          speed: settings.speechSpeed,
-          instructions: settings.selectedModel.supportsInstructions ? settings.voiceInstructions : nil
-        )
-      } else {
-        let data = try await client.generateSpeech(
-          text: text,
-          voice: settings.selectedVoice,
-          model: settings.selectedModel,
-          speed: settings.speechSpeed,
-          instructions: settings.selectedModel.supportsInstructions ? settings.voiceInstructions : nil
-        )
-        audioData = [data]
+      // Check if cancelled after API call
+      try Task.checkCancellation()
+
+      DispatchQueue.main.async {
+        StreamingAudioPlayer.shared.startStreaming(stream)
       }
-
-      await MainActor.run {
-        if audioData.count == 1 {
-          player.play(audioData[0])
-        } else {
-          player.playSequence(audioData)
-        }
-      }
-
-    } catch let error as OpenAIError {
-      await MainActor.run {
-        showNotification(title: "OpenAI TTS Error", body: error.localizedDescription)
-      }
+    } catch is CancellationError {
+      // Task was cancelled, do nothing
     } catch {
-      await MainActor.run {
-        showNotification(title: "OpenAI TTS Error", body: error.localizedDescription)
+      DispatchQueue.main.async {
+        StreamingAudioPlayer.shared.stop()
       }
     }
   }
@@ -108,11 +101,7 @@ final class TTSServiceProvider: NSObject {
   private func openSettingsWindow() {
     DispatchQueue.main.async {
       NSApp.activate(ignoringOtherApps: true)
-      if #available(macOS 13.0, *) {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-      } else {
-        NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-      }
+      NSApp.openSettingsWindow()
     }
   }
 }

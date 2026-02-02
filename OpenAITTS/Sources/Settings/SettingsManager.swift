@@ -10,6 +10,8 @@ enum TTSVoice: String, CaseIterable, Identifiable {
   case coral
   case echo
   case fable
+  case marin
+  case cedar
   case nova
   case onyx
   case sage
@@ -19,7 +21,14 @@ enum TTSVoice: String, CaseIterable, Identifiable {
   var id: String { rawValue }
 
   var displayName: String {
-    rawValue.capitalized
+    switch self {
+    case .marin:
+      "Marin (Recommended)"
+    case .cedar:
+      "Cedar (Recommended)"
+    default:
+      rawValue.capitalized
+    }
   }
 }
 
@@ -53,7 +62,7 @@ enum TTSModel: String, CaseIterable, Identifiable {
 final class SettingsManager: ObservableObject {
   static let shared = SettingsManager()
 
-  private let keychainService = "com.openaitts.app"
+  private let keychainService = "sh.lennon.openaitts"
   private let keychainAccount = "openai-api-key"
 
   private let voiceKey = "selectedVoice"

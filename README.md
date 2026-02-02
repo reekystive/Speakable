@@ -1,10 +1,10 @@
 # OpenAI TTS Service for macOS
 
-A native macOS menu bar app that adds a system-wide "Speak with OpenAI" service to the right-click context menu. Select any text, right-click, and have it spoken aloud using OpenAI's Text-to-Speech API.
+A native macOS menu bar app that adds a system-wide "Speak with OpenAI TTS" service to the right-click context menu. Select any text, right-click, and have it spoken aloud using OpenAI's Text-to-Speech API.
 
 ## Features
 
-- **System Service Integration** - Adds "Services → Speak with OpenAI" to the right-click menu in any app
+- **System Service Integration** - Adds "Services → Speak with OpenAI TTS" to the right-click menu in any app
 - **Multiple TTS Models** - Support for `tts-1`, `tts-1-hd`, and `gpt-4o-mini-tts`
 - **11 Voice Options** - Alloy, Ash, Ballad, Coral, Echo, Fable, Nova, Onyx, Sage, Shimmer, Verse
 - **Voice Instructions** - Custom voice styling with `gpt-4o-mini-tts` model
@@ -44,7 +44,7 @@ open OpenAITTS.xcodeproj
 After first launch:
 
 1. Open **System Settings → Keyboard → Keyboard Shortcuts → Services**
-2. Find **"Speak with OpenAI"** under **Text**
+2. Find **"Speak with OpenAI TTS"** under **Text**
 3. Enable the checkbox
 
 ## Usage
@@ -52,7 +52,7 @@ After first launch:
 1. Launch the app (it runs in the menu bar)
 2. Click the speaker icon in the menu bar → **Settings**
 3. Enter your OpenAI API key
-4. Select any text in any app → Right-click → **Services → Speak with OpenAI**
+4. Select any text in any app → Right-click → **Services → Speak with OpenAI TTS**
 
 ## Configuration
 

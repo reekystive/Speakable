@@ -5,7 +5,7 @@ final class SettingsManagerTests: XCTestCase {
   // MARK: - TTSVoice Tests
 
   func testTTSVoiceAllCases() {
-    // Verify all expected voices are available
+    // Verify all expected voices are available (13 total)
     let expectedVoices = [
       "alloy",
       "ash",
@@ -13,6 +13,8 @@ final class SettingsManagerTests: XCTestCase {
       "coral",
       "echo",
       "fable",
+      "marin",
+      "cedar",
       "nova",
       "onyx",
       "sage",
@@ -21,6 +23,7 @@ final class SettingsManagerTests: XCTestCase {
     ]
     let actualVoices = TTSVoice.allCases.map(\.rawValue)
 
+    XCTAssertEqual(TTSVoice.allCases.count, 13)
     for voice in expectedVoices {
       XCTAssertTrue(actualVoices.contains(voice), "Missing voice: \(voice)")
     }

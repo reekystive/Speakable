@@ -2,7 +2,8 @@ import SwiftUI
 
 struct MenuBarView: View {
   @StateObject private var settings = SettingsManager.shared
-  @StateObject private var player = AudioPlayer.shared
+  @StateObject private var player = StreamingAudioPlayer.shared
+  @Environment(\.openSettings) private var openSettings
 
   var body: some View {
     Group {
@@ -12,6 +13,9 @@ struct MenuBarView: View {
       Divider()
       settingsButton
       quitButton
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .openSettingsWindow)) { _ in
+      openSettings()
     }
   }
 
@@ -23,68 +27,65 @@ struct MenuBarView: View {
   }
 
   private var statusText: String {
-    settings.isConfigured ? "Ready" : "API Key not set"
+    switch player.state {
+    case .loading:
+      "Generating..."
+    case .playing:
+      "Playing"
+    case .paused:
+      "Paused"
+    case .error:
+      "Error"
+    case .idle:
+      settings.isConfigured ? "Ready" : "API Key not set"
+    }
   }
 
   private var statusIcon: String {
-    settings.isConfigured ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+    switch player.state {
+    case .loading:
+      "ellipsis.circle.fill"
+    case .playing:
+      "speaker.wave.3.fill"
+    case .paused:
+      "speaker.slash.fill"
+    case .error:
+      "exclamationmark.circle.fill"
+    case .idle:
+      settings.isConfigured ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+    }
   }
 
   // MARK: - Playback Section
 
   @ViewBuilder
   private var playbackSection: some View {
-    if isActivePlaybackState {
-      playPauseButton
-      stopButton
-    } else {
-      playbackStatusLabel
-    }
-  }
-
-  private var isActivePlaybackState: Bool {
     switch player.state {
-    case .playing, .paused:
-      return true
-    case .idle, .loading, .error:
-      return false
-    }
-  }
-
-  private var playPauseButton: some View {
-    Button(playPauseTitle, action: player.togglePlayPause)
-      .keyboardShortcut("p", modifiers: [])
-  }
-
-  private var playPauseTitle: String {
-    player.isPlaying ? "Pause" : "Resume"
-  }
-
-  private var stopButton: some View {
-    Button("Stop", action: player.stop)
-      .keyboardShortcut("s", modifiers: [])
-  }
-
-  @ViewBuilder
-  private var playbackStatusLabel: some View {
-    switch player.state {
+    case .playing:
+      Button("Pause") { player.pause() }
+        .keyboardShortcut("p", modifiers: [])
+      Button("Stop") { player.stop() }
+        .keyboardShortcut("s", modifiers: [])
+    case .paused:
+      Button("Resume") { player.resume() }
+        .keyboardShortcut("p", modifiers: [])
+      Button("Stop") { player.stop() }
+        .keyboardShortcut("s", modifiers: [])
     case .loading:
-      Label("Loading...", systemImage: "ellipsis")
-        .disabled(true)
-    case .error:
-      Label("Error occurred", systemImage: "exclamationmark.circle")
-        .disabled(true)
-    case .idle, .playing, .paused:
-      Text("No audio playing")
-        .disabled(true)
+      Button("Stop") { player.stop() }
+        .keyboardShortcut("s", modifiers: [])
+    case .idle, .error:
+      EmptyView()
     }
   }
 
   // MARK: - Menu Buttons
 
   private var settingsButton: some View {
-    Button("Settings...", action: openSettings)
-      .keyboardShortcut(",", modifiers: .command)
+    Button("Settings...") {
+      openSettings()
+    }
+    .keyboardShortcut(",", modifiers: .command)
   }
 
   private var quitButton: some View {
@@ -92,17 +93,6 @@ struct MenuBarView: View {
       NSApp.terminate(nil)
     }
     .keyboardShortcut("q", modifiers: .command)
-  }
-
-  // MARK: - Actions
-
-  private func openSettings() {
-    NSApp.activate(ignoringOtherApps: true)
-    if #available(macOS 13.0, *) {
-      NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-    } else {
-      NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-    }
   }
 }
 

@@ -52,8 +52,66 @@ final class OpenAIClient {
   private init() {
     let config = URLSessionConfiguration.default
     config.timeoutIntervalForRequest = 60
-    config.timeoutIntervalForResource = 120
+    config.timeoutIntervalForResource = 300 // Longer for streaming
     session = URLSession(configuration: config)
+  }
+
+  /// Generate speech with streaming response (PCM format for real-time playback)
+  func generateSpeechStream(
+    text: String,
+    voice: TTSVoice = .alloy,
+    model: TTSModel = .gpt4oMiniTTS,
+    speed: Double = 1.0,
+    instructions: String? = nil
+  ) async throws -> URLSession.AsyncBytes {
+    let settings = SettingsManager.shared
+
+    guard !settings.apiKey.isEmpty else {
+      throw OpenAIError.missingAPIKey
+    }
+
+    guard let url = URL(string: baseURL) else {
+      throw OpenAIError.invalidURL
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+    var body: [String: Any] = [
+      "model": model.rawValue,
+      "input": text,
+      "voice": voice.rawValue,
+      "response_format": "pcm", // PCM for streaming: 24kHz, 16-bit, mono
+      "speed": max(0.25, min(4.0, speed)),
+    ]
+
+    if model.supportsInstructions, let instructions, !instructions.isEmpty {
+      body["instructions"] = instructions
+    }
+
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+    let (bytes, response) = try await session.bytes(for: request)
+
+    guard let httpResponse = response as? HTTPURLResponse else {
+      throw OpenAIError.invalidResponse
+    }
+
+    guard httpResponse.statusCode == 200 else {
+      // For error responses, collect the data and parse
+      var errorData = Data()
+      for try await byte in bytes {
+        errorData.append(byte)
+      }
+      if let errorResponse = try? JSONDecoder().decode(OpenAIErrorResponse.self, from: errorData) {
+        throw OpenAIError.apiError(statusCode: httpResponse.statusCode, message: errorResponse.error.message)
+      }
+      throw OpenAIError.apiError(statusCode: httpResponse.statusCode, message: "Unknown error")
+    }
+
+    return bytes
   }
 
   /// Generate speech from text using OpenAI TTS API
@@ -167,6 +225,67 @@ final class OpenAIClient {
     }
 
     return audioChunks
+  }
+
+  /// Generate speech with parallel downloading
+  /// First chunk starts playback immediately, remaining chunks download in parallel
+  func generateSpeechStreaming(
+    text: String,
+    voice: TTSVoice = .alloy,
+    model: TTSModel = .gpt4oMiniTTS,
+    speed: Double = 1.0,
+    instructions: String? = nil,
+    onFirstChunk: @escaping (Data, Int) -> Void,
+    onChunk: @escaping (Int, Data) -> Void
+  ) async throws {
+    let chunks = splitText(text, maxLength: maxCharacters)
+    let totalChunks = chunks.count
+
+    guard !chunks.isEmpty else { return }
+
+    // Download first chunk and start playback immediately
+    let firstAudio = try await generateSpeech(
+      text: chunks[0],
+      voice: voice,
+      model: model,
+      speed: speed,
+      instructions: instructions
+    )
+    onFirstChunk(firstAudio, totalChunks)
+
+    // Download remaining chunks in parallel
+    if chunks.count > 1 {
+      try await withThrowingTaskGroup(of: (Int, Data).self) { group in
+        for (index, chunk) in chunks.dropFirst().enumerated() {
+          let chunkIndex = index + 1
+          group.addTask {
+            let audio = try await self.generateSpeech(
+              text: chunk,
+              voice: voice,
+              model: model,
+              speed: speed,
+              instructions: instructions
+            )
+            return (chunkIndex, audio)
+          }
+        }
+
+        // Collect results and deliver in order
+        var results: [Int: Data] = [:]
+        var nextExpected = 1
+
+        for try await (index, data) in group {
+          results[index] = data
+
+          // Deliver any consecutive chunks that are ready
+          while let audio = results[nextExpected] {
+            onChunk(nextExpected, audio)
+            results.removeValue(forKey: nextExpected)
+            nextExpected += 1
+          }
+        }
+      }
+    }
   }
 
   /// Split text into chunks at sentence boundaries

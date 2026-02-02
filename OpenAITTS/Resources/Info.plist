@@ -32,7 +32,7 @@
             <key>NSMenuItem</key>
             <dict>
                 <key>default</key>
-                <string>Speak with OpenAI</string>
+                <string>Speak with OpenAI TTS</string>
             </dict>
             <key>NSMessage</key>
             <string>speakText</string>

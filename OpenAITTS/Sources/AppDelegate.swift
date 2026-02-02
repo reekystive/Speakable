@@ -11,6 +11,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // Start as accessory (no dock icon)
     NSApp.setActivationPolicy(.accessory)
 
+    // Close any windows that were restored (we want to start with just menu bar)
+    DispatchQueue.main.async {
+      for window in NSApp.windows where window.isVisible && window.styleMask.contains(.titled) {
+        window.close()
+      }
+    }
+
     // Monitor window visibility
     NotificationCenter.default.addObserver(
       self,
@@ -28,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
-    AudioPlayer.shared.stop()
+    StreamingAudioPlayer.shared.stop()
   }
 
   func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -36,8 +43,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   @objc private func windowDidBecomeVisible(_ notification: Notification) {
-    // Show dock icon when a window is visible
-    if NSApp.activationPolicy() != .regular {
+    guard let window = notification.object as? NSWindow else { return }
+
+    // Only show dock icon for Settings window (has title and is a normal level window)
+    let isSettingsWindow = window.styleMask.contains(.titled)
+      && window.level == .normal
+      && window.title.contains("Settings")
+
+    if isSettingsWindow, NSApp.activationPolicy() != .regular {
       NSApp.setActivationPolicy(.regular)
       NSApp.activate(ignoringOtherApps: true)
     }

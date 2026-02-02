@@ -3,14 +3,30 @@ import SwiftUI
 @main
 struct OpenAITTSApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+  @StateObject private var player = StreamingAudioPlayer.shared
 
   var body: some Scene {
+    MenuBarExtra("OpenAI TTS", systemImage: menuBarIcon) {
+      MenuBarView()
+    }
+
     Settings {
       SettingsView()
     }
+  }
 
-    MenuBarExtra("OpenAI TTS", systemImage: "speaker.wave.2.fill") {
-      MenuBarView()
+  private var menuBarIcon: String {
+    switch player.state {
+    case .idle:
+      "speaker.wave.2.fill"
+    case .loading:
+      "ellipsis.circle.fill"
+    case .playing:
+      "speaker.wave.3.fill"
+    case .paused:
+      "speaker.slash.fill"
+    case .error:
+      "exclamationmark.triangle.fill"
     }
   }
 }

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
   @StateObject private var settings = SettingsManager.shared
-  @StateObject private var player = AudioPlayer.shared
+  @StateObject private var player = StreamingAudioPlayer.shared
   @State private var isTestingVoice = false
   @State private var showingAPIKeyField = false
   @State private var testText = "Hello! This is a test of OpenAI text to speech."
@@ -112,12 +112,14 @@ struct SettingsView: View {
 
   private var buttonTitle: String {
     if player.isPlaying { return "Stop" }
-    return isTestingVoice ? "Generating..." : "Test Voice"
+    if case .loading = player.state { return "Generating..." }
+    return "Test Voice"
   }
 
   private var buttonDisabled: Bool {
     if player.isPlaying { return false }
-    return !settings.isConfigured || isTestingVoice || testText.isEmpty
+    if case .loading = player.state { return false }
+    return !settings.isConfigured || testText.isEmpty
   }
 
   private func testOrStop() {
@@ -125,12 +127,14 @@ struct SettingsView: View {
       player.stop()
       return
     }
-
-    isTestingVoice = true
+    if case .loading = player.state {
+      player.stop()
+      return
+    }
 
     Task {
       do {
-        let audioData = try await OpenAIClient.shared.generateSpeech(
+        let stream = try await OpenAIClient.shared.generateSpeechStream(
           text: testText,
           voice: settings.selectedVoice,
           model: settings.selectedModel,
@@ -139,12 +143,10 @@ struct SettingsView: View {
         )
 
         await MainActor.run {
-          player.play(audioData)
-          isTestingVoice = false
+          player.startStreaming(stream)
         }
       } catch {
         await MainActor.run {
-          isTestingVoice = false
           let alert = NSAlert()
           alert.messageText = "Test Failed"
           alert.informativeText = error.localizedDescription
