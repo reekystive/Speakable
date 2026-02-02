@@ -118,14 +118,12 @@ final class SettingsManager: ObservableObject {
     apiKey = loadAPIKeyFromKeychain() ?? ""
 
     if let voiceRaw = UserDefaults.standard.string(forKey: voiceKey),
-       let voice = TTSVoice(rawValue: voiceRaw)
-    {
+       let voice = TTSVoice(rawValue: voiceRaw) {
       selectedVoice = voice
     }
 
     if let modelRaw = UserDefaults.standard.string(forKey: modelKey),
-       let model = TTSModel(rawValue: modelRaw)
-    {
+       let model = TTSModel(rawValue: modelRaw) {
       selectedModel = model
     }
 
@@ -149,7 +147,7 @@ final class SettingsManager: ObservableObject {
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: keychainService,
       kSecAttrAccount as String: keychainAccount,
-      kSecUseDataProtectionKeychain as String: false,
+      kSecUseDataProtectionKeychain as String: false
     ]
     SecItemDelete(deleteQuery as CFDictionary)
 
@@ -161,7 +159,7 @@ final class SettingsManager: ObservableObject {
       kSecAttrService as String: keychainService,
       kSecAttrAccount as String: keychainAccount,
       kSecValueData as String: data,
-      kSecUseDataProtectionKeychain as String: false,
+      kSecUseDataProtectionKeychain as String: false
     ]
 
     let status = SecItemAdd(addQuery as CFDictionary, nil)
@@ -177,7 +175,7 @@ final class SettingsManager: ObservableObject {
       kSecAttrAccount as String: keychainAccount,
       kSecReturnData as String: true,
       kSecMatchLimit as String: kSecMatchLimitOne,
-      kSecUseDataProtectionKeychain as String: false,
+      kSecUseDataProtectionKeychain as String: false
     ]
 
     var result: AnyObject?

@@ -43,6 +43,38 @@ final class StreamingAudioPlayer: ObservableObject {
     playerNode.scheduleBuffer(buffer, completionHandler: nil)
   }
 
+  private struct StreamingConfig {
+    let bytesPerSample = 2 // 16-bit
+    let samplesPerBuffer = 12000 // 500ms at 24kHz
+    var bytesPerBuffer: Int { samplesPerBuffer * bytesPerSample }
+    var prebufferBytes: Int { bytesPerBuffer * 2 } // Prebuffer 1 second
+  }
+
+  private func scheduleAvailableBuffers(_ pendingData: inout Data, config: StreamingConfig) {
+    while pendingData.count >= config.bytesPerBuffer {
+      let chunk = pendingData.prefix(config.bytesPerBuffer)
+      pendingData.removeFirst(config.bytesPerBuffer)
+      if let buffer = createBuffer(from: Data(chunk)) {
+        scheduleBufferSync(buffer)
+      }
+    }
+  }
+
+  private func scheduleRemainingData(_ pendingData: Data, config: StreamingConfig) {
+    guard !pendingData.isEmpty, pendingData.count >= config.bytesPerSample else { return }
+    let sampleCount = pendingData.count / config.bytesPerSample
+    let usableBytes = sampleCount * config.bytesPerSample
+    if let buffer = createBuffer(from: Data(pendingData.prefix(usableBytes))) {
+      scheduleBufferSync(buffer)
+    }
+  }
+
+  private func waitForPlaybackCompletion() async {
+    while playerNode.isPlaying {
+      try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    }
+  }
+
   /// Start streaming playback from an AsyncBytes stream
   func startStreaming(_ stream: URLSession.AsyncBytes) {
     stop()
@@ -55,40 +87,20 @@ final class StreamingAudioPlayer: ObservableObject {
         try engine.start()
 
         var pendingData = Data()
-        let bytesPerSample = 2 // 16-bit
-        let samplesPerBuffer = 12000 // 500ms at 24kHz (larger buffer)
-        let bytesPerBuffer = samplesPerBuffer * bytesPerSample
-        let prebufferBytes = bytesPerBuffer * 2 // Prebuffer 1 second
+        let config = StreamingConfig()
         var hasStartedPlayback = false
 
         for try await byte in stream {
           if Task.isCancelled { break }
-
           pendingData.append(byte)
 
-          // Start playback after prebuffering enough data
-          if !hasStartedPlayback, pendingData.count >= prebufferBytes {
-            // Schedule initial buffers
-            while pendingData.count >= bytesPerBuffer {
-              let chunk = pendingData.prefix(bytesPerBuffer)
-              pendingData.removeFirst(bytesPerBuffer)
-              if let buffer = createBuffer(from: Data(chunk)) {
-                scheduleBufferSync(buffer)
-              }
-            }
-
+          if !hasStartedPlayback, pendingData.count >= config.prebufferBytes {
+            scheduleAvailableBuffers(&pendingData, config: config)
             playerNode.play()
             hasStartedPlayback = true
             updateState(.playing, playing: true)
           } else if hasStartedPlayback {
-            // Continue scheduling buffers during playback
-            while pendingData.count >= bytesPerBuffer {
-              let chunk = pendingData.prefix(bytesPerBuffer)
-              pendingData.removeFirst(bytesPerBuffer)
-              if let buffer = createBuffer(from: Data(chunk)) {
-                scheduleBufferSync(buffer)
-              }
-            }
+            scheduleAvailableBuffers(&pendingData, config: config)
           }
         }
 
@@ -97,26 +109,13 @@ final class StreamingAudioPlayer: ObservableObject {
           if let buffer = createBuffer(from: pendingData) {
             scheduleBufferSync(buffer)
           }
-          pendingData.removeAll()
           playerNode.play()
-          hasStartedPlayback = true
           updateState(.playing, playing: true)
+        } else {
+          scheduleRemainingData(pendingData, config: config)
         }
 
-        // Schedule any remaining data
-        if !pendingData.isEmpty, pendingData.count >= bytesPerSample {
-          let sampleCount = pendingData.count / bytesPerSample
-          let usableBytes = sampleCount * bytesPerSample
-          if let buffer = createBuffer(from: Data(pendingData.prefix(usableBytes))) {
-            scheduleBufferSync(buffer)
-          }
-        }
-
-        // Wait for playback to finish
-        while playerNode.isPlaying {
-          try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-        }
-
+        await waitForPlaybackCompletion()
         updateState(.idle, playing: false)
         engine.stop()
       } catch {

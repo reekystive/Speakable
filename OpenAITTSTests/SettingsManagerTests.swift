@@ -19,7 +19,7 @@ final class SettingsManagerTests: XCTestCase {
       "onyx",
       "sage",
       "shimmer",
-      "verse",
+      "verse"
     ]
     let actualVoices = TTSVoice.allCases.map(\.rawValue)
 
