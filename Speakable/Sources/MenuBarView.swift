@@ -107,7 +107,7 @@ struct MenuBarView: View {
   }
 
   private var quitButton: some View {
-    Button("Quit OpenAI TTS") {
+    Button("Quit Speakable") {
       NSApp.terminate(nil)
     }
     .keyboardShortcut("q", modifiers: .command)

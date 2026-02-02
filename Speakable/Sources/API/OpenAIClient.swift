@@ -84,7 +84,7 @@ final class OpenAIClient {
       "input": text,
       "voice": voice.rawValue,
       "response_format": "pcm", // PCM for streaming: 24kHz, 16-bit, mono
-      "speed": max(0.25, min(4.0, speed))
+      "speed": max(0.25, min(4.0, speed)),
     ]
 
     if model.supportsInstructions, let instructions, !instructions.isEmpty {
@@ -155,7 +155,7 @@ final class OpenAIClient {
       "input": text,
       "voice": voice.rawValue,
       "response_format": "mp3",
-      "speed": max(0.25, min(4.0, speed))
+      "speed": max(0.25, min(4.0, speed)),
     ]
 
     // Add instructions for supported models

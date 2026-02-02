@@ -1,4 +1,4 @@
-@testable import OpenAITTS
+@testable import Speakable
 import XCTest
 
 final class SettingsManagerTests: XCTestCase {
@@ -19,7 +19,7 @@ final class SettingsManagerTests: XCTestCase {
       "onyx",
       "sage",
       "shimmer",
-      "verse"
+      "verse",
     ]
     let actualVoices = TTSVoice.allCases.map(\.rawValue)
 

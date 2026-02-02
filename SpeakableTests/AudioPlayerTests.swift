@@ -1,4 +1,4 @@
-@testable import OpenAITTS
+@testable import Speakable
 import XCTest
 
 final class AudioPlayerTests: XCTestCase {

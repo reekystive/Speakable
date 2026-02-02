@@ -90,16 +90,16 @@ jobs:
 
       - name: Build (Debug)
         run: |
-          xcodebuild -project OpenAITTS.xcodeproj \
-            -scheme OpenAITTS \
+          xcodebuild -project Speakable.xcodeproj \
+            -scheme Speakable \
             -configuration Debug \
             -destination 'platform=macOS' \
             build 2>&1 | xcbeautify
 
       - name: Test
         run: |
-          xcodebuild -project OpenAITTS.xcodeproj \
-            -scheme OpenAITTS \
+          xcodebuild -project Speakable.xcodeproj \
+            -scheme Speakable \
             -configuration Debug \
             -destination 'platform=macOS' \
             test 2>&1 | xcbeautify
@@ -141,8 +141,8 @@ jobs:
 
       - name: Build (Release)
         run: |
-          xcodebuild -project OpenAITTS.xcodeproj \
-            -scheme OpenAITTS \
+          xcodebuild -project Speakable.xcodeproj \
+            -scheme Speakable \
             -configuration Release \
             -destination 'platform=macOS' \
             -derivedDataPath build \
@@ -151,18 +151,18 @@ jobs:
       - name: Package app
         id: package
         run: |
-          APP_PATH="build/Build/Products/Release/OpenAI TTS.app"
-          ZIP_NAME="OpenAI-TTS-${GITHUB_SHA::7}.zip"
+          APP_PATH="build/Build/Products/Release/Speakable.app"
+          ZIP_NAME="Speakable-${GITHUB_SHA::7}.zip"
 
           # Create zip
           cd "$(dirname "$APP_PATH")"
-          zip -r -y "$GITHUB_WORKSPACE/$ZIP_NAME" "OpenAI TTS.app"
+          zip -r -y "$GITHUB_WORKSPACE/$ZIP_NAME" "Speakable.app"
 
           echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OpenAI-TTS-${{ github.sha }}
+          name: Speakable-${{ github.sha }}
           path: ${{ steps.package.outputs.zip_name }}
           retention-days: 30

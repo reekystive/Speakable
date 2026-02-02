@@ -32,12 +32,12 @@
             <key>NSMenuItem</key>
             <dict>
                 <key>default</key>
-                <string>Speak with OpenAI TTS</string>
+                <string>Speak with Speakable</string>
             </dict>
             <key>NSMessage</key>
             <string>speakText</string>
             <key>NSPortName</key>
-            <string>OpenAITTS</string>
+            <string>Speakable</string>
             <key>NSSendTypes</key>
             <array>
                 <string>public.plain-text</string>

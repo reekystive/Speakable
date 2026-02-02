@@ -1,12 +1,12 @@
 import SwiftUI
 
 @main
-struct OpenAITTSApp: App {
+struct SpeakableApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
   @StateObject private var player = StreamingAudioPlayer.shared
 
   var body: some Scene {
-    MenuBarExtra("OpenAI TTS", systemImage: menuBarIcon) {
+    MenuBarExtra("Speakable", systemImage: menuBarIcon) {
       MenuBarView()
     }
 

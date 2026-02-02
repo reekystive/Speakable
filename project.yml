@@ -1,4 +1,4 @@
-name: OpenAITTS
+name: Speakable
 options:
   bundleIdPrefix: sh.lennon
   deploymentTarget:
@@ -13,18 +13,18 @@ packages:
     from: "2.2.0"
 
 schemes:
-  OpenAITTS:
+  Speakable:
     build:
       targets:
-        OpenAITTS: all
-        OpenAITTSTests: [test]
+        Speakable: all
+        SpeakableTests: [test]
     run:
       config: Debug
-      executable: OpenAITTS
+      executable: Speakable
     test:
       config: Debug
       targets:
-        - OpenAITTSTests
+        - SpeakableTests
     profile:
       config: Release
     analyze:
@@ -45,18 +45,18 @@ settings:
     SWIFT_EMIT_LOC_STRINGS: YES
 
 targets:
-  OpenAITTS:
+  Speakable:
     type: application
     platform: macOS
     sources:
-      - path: OpenAITTS/Sources
-      - path: OpenAITTS/Resources
+      - path: Speakable/Sources
+      - path: Speakable/Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.openaitts
-        INFOPLIST_FILE: OpenAITTS/Resources/Info.plist
-        PRODUCT_NAME: OpenAI TTS
-        PRODUCT_MODULE_NAME: OpenAITTS
+        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.Speakable
+        INFOPLIST_FILE: Speakable/Resources/Info.plist
+        PRODUCT_NAME: Speakable
+        PRODUCT_MODULE_NAME: Speakable
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
         COMBINE_HIDPI_IMAGES: YES
@@ -64,20 +64,20 @@ targets:
           - $(inherited)
           - "@executable_path/../Frameworks"
     entitlements:
-      path: OpenAITTS/Resources/OpenAITTS.entitlements
+      path: Speakable/Resources/Speakable.entitlements
     dependencies:
       - package: KeyboardShortcuts
 
-  OpenAITTSTests:
+  SpeakableTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - path: OpenAITTSTests
+      - path: SpeakableTests
     dependencies:
-      - target: OpenAITTS
+      - target: Speakable
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.openaitts.tests
-        TEST_HOST: $(BUILT_PRODUCTS_DIR)/OpenAI TTS.app/Contents/MacOS/OpenAI TTS
+        PRODUCT_BUNDLE_IDENTIFIER: sh.lennon.Speakable.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Speakable.app/Contents/MacOS/Speakable
         BUNDLE_LOADER: $(TEST_HOST)
         GENERATE_INFOPLIST_FILE: YES

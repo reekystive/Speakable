@@ -8,7 +8,7 @@ final class TTSServiceProvider: NSObject {
 
   private var currentTask: Task<Void, Never>?
 
-  /// Called by macOS Services when user selects "Speak with OpenAI"
+  /// Called by macOS Services when user selects "Speak with Speakable"
   /// This method name must match NSMessage in Info.plist
   @objc func speakText(
     _ pboard: NSPasteboard,
@@ -23,9 +23,9 @@ final class TTSServiceProvider: NSObject {
     let settings = SettingsManager.shared
 
     guard settings.isConfigured else {
-      error.pointee = "API Key not configured. Please open OpenAI TTS settings." as NSString
+      error.pointee = "API Key not configured. Please open Speakable settings." as NSString
       showNotification(
-        title: "OpenAI TTS",
+        title: "Speakable",
         body: "API Key not configured. Please open the app to set up your API key."
       )
       openSettingsWindow()
@@ -45,7 +45,7 @@ final class TTSServiceProvider: NSObject {
   /// Speak text from clipboard
   func speakClipboard() {
     guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
-      showNotification(title: "OpenAI TTS", body: "Clipboard is empty or contains no text.")
+      showNotification(title: "Speakable", body: "Clipboard is empty or contains no text.")
       return
     }
 
@@ -53,7 +53,7 @@ final class TTSServiceProvider: NSObject {
 
     guard settings.isConfigured else {
       showNotification(
-        title: "OpenAI TTS",
+        title: "Speakable",
         body: "API Key not configured. Please open the app to set up your API key."
       )
       openSettingsWindow()
