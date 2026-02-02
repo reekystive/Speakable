@@ -6,6 +6,10 @@ options:
   xcodeVersion: "26.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
+  developmentLanguage: en
+  knownRegions:
+    - en
+    - zh-Hans
 
 packages:
   KeyboardShortcuts:
