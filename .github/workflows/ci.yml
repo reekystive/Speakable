@@ -13,7 +13,7 @@ jobs:
   # Lint and format checks run in parallel
   lint:
     name: SwiftLint
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
 
   format-check:
     name: SwiftFormat
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +58,7 @@ jobs:
   # Build and test runs independently
   build-and-test:
     name: Build & Test
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -126,7 +126,7 @@ jobs:
   # Release build only runs on main branch after tests pass
   release-build:
     name: Release Build
-    runs-on: macos-15
+    runs-on: macos-26
     needs: [build-and-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
