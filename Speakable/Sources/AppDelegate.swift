@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     if isSettingsWindow, NSApp.activationPolicy() != .regular {
       NSApp.setActivationPolicy(.regular)
-      NSApp.activate(ignoringOtherApps: true)
+      NSApp.activate()
     }
   }
 

@@ -10,26 +10,11 @@ env:
   DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
 
 jobs:
-  # Lint and format checks run in parallel
   lint:
     name: SwiftLint
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/swiftlint
-          key: ${{ runner.os }}-homebrew-swiftlint-${{ hashFiles('.swiftlint.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-swiftlint-
-
-      - name: Install SwiftLint
-        run: brew install swiftlint || brew upgrade swiftlint
-
       - name: Lint
         run: swiftlint --strict
 
@@ -38,48 +23,16 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/swiftformat
-          key: ${{ runner.os }}-homebrew-swiftformat-${{ hashFiles('.swiftformat') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-swiftformat-
-
       - name: Install SwiftFormat
-        run: brew install swiftformat || brew upgrade swiftformat
-
+        run: brew install swiftformat
       - name: Check formatting
         run: swiftformat --lint .
 
-  # Build and test runs independently
   build-and-test:
     name: Build & Test
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/xcodegen
-            /usr/local/Cellar/xcbeautify
-          key: ${{ runner.os }}-homebrew-build-tools
-          restore-keys: |
-            ${{ runner.os }}-homebrew-build-
-
-      - name: Cache Xcode DerivedData
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-deriveddata-${{ hashFiles('project.yml', '**/*.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-deriveddata-
 
       - name: Cache Swift Package Manager
         uses: actions/cache@v4
@@ -90,8 +43,7 @@ jobs:
             ${{ runner.os }}-spm-
 
       - name: Install dependencies
-        run: |
-          brew install xcodegen xcbeautify || true
+        run: brew install xcodegen xcbeautify
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -123,7 +75,6 @@ jobs:
             -disableAutomaticPackageResolution \
             test 2>&1 | xcbeautify
 
-  # Release build only runs on main branch after tests pass
   release-build:
     name: Release Build
     runs-on: macos-26
@@ -131,25 +82,6 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache Homebrew
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar/xcodegen
-            /usr/local/Cellar/xcbeautify
-          key: ${{ runner.os }}-homebrew-build-tools
-          restore-keys: |
-            ${{ runner.os }}-homebrew-build-
-
-      - name: Cache Xcode DerivedData
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-deriveddata-release-${{ hashFiles('project.yml', '**/*.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-deriveddata-release-
 
       - name: Cache Swift Package Manager
         uses: actions/cache@v4
@@ -160,8 +92,7 @@ jobs:
             ${{ runner.os }}-spm-
 
       - name: Install dependencies
-        run: |
-          brew install xcodegen xcbeautify || true
+        run: brew install xcodegen xcbeautify
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -186,9 +117,7 @@ jobs:
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
-        env:
-          SHORT_SHA: ${{ github.sha }}
         with:
-          name: Speakable-${{ env.SHORT_SHA }}
+          name: Speakable-${{ github.sha }}
           path: build/Build/Products/Release/Speakable.app
           retention-days: 30
