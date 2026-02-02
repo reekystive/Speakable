@@ -5,5 +5,6 @@
 //   security find-certificate -c "Apple Development" -p | openssl x509 -subject -noout
 // Look for the OU= field
 
-DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
-CODE_SIGN_IDENTITY = Apple Development
+DEVELOPMENT_TEAM=YOUR_TEAM_ID_HERE
+CODE_SIGN_IDENTITY=Apple Development
+CODE_SIGN_STYLE=Automatic
