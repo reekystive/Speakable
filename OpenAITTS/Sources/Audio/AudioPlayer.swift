@@ -3,12 +3,23 @@ import Foundation
 
 // MARK: - Audio Player State
 
-enum AudioPlayerState {
+enum AudioPlayerState: Equatable {
   case idle
   case loading
   case playing
   case paused
   case error(Error)
+
+  static func == (lhs: AudioPlayerState, rhs: AudioPlayerState) -> Bool {
+    switch (lhs, rhs) {
+    case (.idle, .idle), (.loading, .loading), (.playing, .playing), (.paused, .paused):
+      true
+    case (.error, .error):
+      true
+    default:
+      false
+    }
+  }
 }
 
 // MARK: - Audio Player

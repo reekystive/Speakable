@@ -1,12 +1,14 @@
 import AppKit
 import Foundation
+import KeyboardShortcuts
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-  private let serviceProvider = TTSServiceProvider()
-
   func applicationDidFinishLaunching(_ notification: Notification) {
-    NSApp.servicesProvider = serviceProvider
+    NSApp.servicesProvider = TTSServiceProvider.shared
     NSUpdateDynamicServices()
+
+    // Register global hotkey
+    setupGlobalHotkey()
 
     // Start as accessory (no dock icon)
     NSApp.setActivationPolicy(.accessory)
@@ -34,6 +36,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     )
   }
 
+  private func setupGlobalHotkey() {
+    KeyboardShortcuts.onKeyUp(for: .speakClipboard) {
+      TTSServiceProvider.shared.speakClipboard()
+    }
+  }
+
   func applicationWillTerminate(_ notification: Notification) {
     StreamingAudioPlayer.shared.stop()
   }
@@ -45,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   @objc private func windowDidBecomeVisible(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
 
-    // Only show dock icon for Settings window (has title and is a normal level window)
+    // Only show dock icon for Settings window (not for floating Speak panel)
     let isSettingsWindow = window.styleMask.contains(.titled)
       && window.level == .normal
       && window.title.contains("Settings")

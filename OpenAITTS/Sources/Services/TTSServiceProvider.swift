@@ -4,6 +4,8 @@ import UserNotifications
 
 /// Service Provider that handles the macOS Services menu integration
 final class TTSServiceProvider: NSObject {
+  static let shared = TTSServiceProvider()
+
   private var currentTask: Task<Void, Never>?
 
   /// Called by macOS Services when user selects "Speak with OpenAI"
@@ -22,6 +24,34 @@ final class TTSServiceProvider: NSObject {
 
     guard settings.isConfigured else {
       error.pointee = "API Key not configured. Please open OpenAI TTS settings." as NSString
+      showNotification(
+        title: "OpenAI TTS",
+        body: "API Key not configured. Please open the app to set up your API key."
+      )
+      openSettingsWindow()
+      return
+    }
+
+    // Cancel any ongoing task and stop playback immediately
+    currentTask?.cancel()
+    StreamingAudioPlayer.shared.stop()
+
+    // Start new TTS task
+    currentTask = Task.detached { [weak self] in
+      await self?.performTTS(text: text)
+    }
+  }
+
+  /// Speak text from clipboard
+  func speakClipboard() {
+    guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
+      showNotification(title: "OpenAI TTS", body: "Clipboard is empty or contains no text.")
+      return
+    }
+
+    let settings = SettingsManager.shared
+
+    guard settings.isConfigured else {
       showNotification(
         title: "OpenAI TTS",
         body: "API Key not configured. Please open the app to set up your API key."

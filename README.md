@@ -5,13 +5,15 @@ A native macOS menu bar app that adds a system-wide "Speak with OpenAI TTS" serv
 ## Features
 
 - **System Service Integration** - Adds "Services → Speak with OpenAI TTS" to the right-click menu in any app
+- **Speak Window** - Floating input panel for quick text-to-speech (⌘N from menu bar)
+- **Global Hotkey** - Speak clipboard content from anywhere with a custom shortcut
 - **Multiple TTS Models** - Support for `tts-1`, `tts-1-hd`, and `gpt-4o-mini-tts`
-- **11 Voice Options** - Alloy, Ash, Ballad, Coral, Echo, Fable, Nova, Onyx, Sage, Shimmer, Verse
+- **13 Voice Options** - Alloy, Ash, Ballad, Cedar, Coral, Echo, Fable, Marin, Nova, Onyx, Sage, Shimmer, Verse
 - **Voice Instructions** - Custom voice styling with `gpt-4o-mini-tts` model
 - **Adjustable Speed** - 0.25x to 4.0x playback speed
 - **Secure Storage** - API key stored in macOS Keychain
 - **Menu Bar Controls** - Pause, resume, and stop playback from the menu bar
-- **Long Text Support** - Automatic chunking for text over 4096 characters
+- **Real-time Streaming** - Audio plays as it generates with PCM streaming
 
 ## Requirements
 
@@ -52,7 +54,10 @@ After first launch:
 1. Launch the app (it runs in the menu bar)
 2. Click the speaker icon in the menu bar → **Settings**
 3. Enter your OpenAI API key
-4. Select any text in any app → Right-click → **Services → Speak with OpenAI TTS**
+4. Use any of these methods to speak text:
+   - **Speak Window**: Click menu bar → **Speak...** (or ⌘N), type text, press Enter
+   - **System Service**: Select text in any app → Right-click → **Services → Speak with OpenAI TTS**
+   - **Global Hotkey**: Set a shortcut in Settings to speak clipboard content from anywhere
 
 ## Configuration
 
@@ -71,22 +76,27 @@ After first launch:
 ```
 OpenAITTS/
 ├── Sources/
-│   ├── OpenAITTSApp.swift      # App entry point
-│   ├── AppDelegate.swift       # Service provider registration
-│   ├── SettingsView.swift      # Settings UI
-│   ├── MenuBarView.swift       # Menu bar UI
+│   ├── OpenAITTSApp.swift          # App entry point
+│   ├── AppDelegate.swift           # Service provider & hotkey registration
+│   ├── SettingsView.swift          # Settings UI
+│   ├── MenuBarView.swift           # Menu bar UI
+│   ├── SpeakView.swift             # Speak window UI
+│   ├── SpeakWindow.swift           # Custom floating panel
+│   ├── SpeakWindowController.swift # Window lifecycle management
 │   ├── API/
-│   │   └── OpenAIClient.swift  # OpenAI TTS API client
+│   │   └── OpenAIClient.swift      # OpenAI TTS API client
 │   ├── Audio/
-│   │   └── AudioPlayer.swift   # Audio playback manager
+│   │   ├── AudioPlayer.swift       # MP3 audio playback
+│   │   └── StreamingAudioPlayer.swift  # Real-time PCM streaming
 │   ├── Services/
-│   │   └── TTSServiceProvider.swift  # macOS Service handler
+│   │   └── TTSServiceProvider.swift    # macOS Service handler
 │   └── Settings/
-│       └── SettingsManager.swift     # Settings & Keychain
+│       ├── SettingsManager.swift   # Settings & Keychain
+│       └── HotkeySettings.swift    # Global hotkey definitions
 ├── Resources/
-│   ├── Info.plist              # NSServices configuration
+│   ├── Info.plist                  # NSServices configuration
 │   └── OpenAITTS.entitlements
-└── OpenAITTSTests/             # Unit tests
+└── OpenAITTSTests/                 # Unit tests
 ```
 
 ### Commands

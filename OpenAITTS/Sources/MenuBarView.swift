@@ -3,20 +3,38 @@ import SwiftUI
 struct MenuBarView: View {
   @StateObject private var settings = SettingsManager.shared
   @StateObject private var player = StreamingAudioPlayer.shared
-  @Environment(\.openSettings) private var openSettings
 
   var body: some View {
     Group {
       statusItem
       Divider()
+      speakWindowButton
+      speakClipboardButton
       playbackSection
       Divider()
       settingsButton
       quitButton
     }
-    .onReceive(NotificationCenter.default.publisher(for: .openSettingsWindow)) { _ in
-      openSettings()
+  }
+
+  // MARK: - Speak Window
+
+  private var speakWindowButton: some View {
+    Button("Speak...") {
+      SpeakWindowController.shared.showWindow()
     }
+    .keyboardShortcut("n", modifiers: .command)
+  }
+
+  // MARK: - Speak Clipboard
+
+  @ViewBuilder
+  private var speakClipboardButton: some View {
+    Button("Speak Clipboard") {
+      TTSServiceProvider.shared.speakClipboard()
+    }
+    .disabled(!settings.isConfigured || player.state == .loading)
+    Divider()
   }
 
   // MARK: - Status Item
@@ -82,8 +100,8 @@ struct MenuBarView: View {
   // MARK: - Menu Buttons
 
   private var settingsButton: some View {
-    Button("Settings...") {
-      openSettings()
+    SettingsLink {
+      Text("Settings...")
     }
     .keyboardShortcut(",", modifiers: .command)
   }

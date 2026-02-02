@@ -1,13 +1,14 @@
 import AppKit
 
-extension Notification.Name {
-  static let openSettingsWindow = Notification.Name("openSettingsWindow")
-}
-
 extension NSApplication {
-  /// Requests to open the settings window via notification
+  /// Opens the Settings window programmatically
   func openSettingsWindow() {
     activate(ignoringOtherApps: true)
-    NotificationCenter.default.post(name: .openSettingsWindow, object: nil)
+    // Use the standard macOS selector to open Settings/Preferences window
+    if #available(macOS 14.0, *) {
+      NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    } else {
+      NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+    }
   }
 }

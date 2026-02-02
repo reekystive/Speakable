@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import SwiftUI
 
 struct SettingsView: View {
@@ -92,6 +93,14 @@ struct SettingsView: View {
       }
 
       Section {
+        KeyboardShortcuts.Recorder("Speak Clipboard:", name: .speakClipboard)
+      } header: {
+        Text("Global Hotkey")
+      } footer: {
+        Text("Set a global keyboard shortcut to speak clipboard content from anywhere.")
+      }
+
+      Section {
         TextField("Enter test text...", text: $testText, axis: .vertical)
           .lineLimit(2...4)
 
@@ -107,7 +116,7 @@ struct SettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(width: 480, height: 560)
+    .frame(width: 480, height: 620)
   }
 
   private var buttonTitle: String {
