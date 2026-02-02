@@ -101,7 +101,7 @@ jobs:
           xcodebuild -project Speakable.xcodeproj \
             -scheme Speakable \
             -resolvePackageDependencies \
-            -clonedSourcePackagesDirPath SourcePackages 2>&1 | xcbeautify
+            -clonedSourcePackagesDirPath SourcePackages
 
       - name: Build (Debug)
         run: |
@@ -110,6 +110,7 @@ jobs:
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
+            -disableAutomaticPackageResolution \
             build 2>&1 | xcbeautify
 
       - name: Test
@@ -119,6 +120,7 @@ jobs:
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
+            -disableAutomaticPackageResolution \
             test 2>&1 | xcbeautify
 
   # Release build only runs on main branch after tests pass
@@ -169,7 +171,7 @@ jobs:
           xcodebuild -project Speakable.xcodeproj \
             -scheme Speakable \
             -resolvePackageDependencies \
-            -clonedSourcePackagesDirPath SourcePackages 2>&1 | xcbeautify
+            -clonedSourcePackagesDirPath SourcePackages
 
       - name: Build (Release)
         run: |
@@ -179,6 +181,7 @@ jobs:
             -destination 'platform=macOS' \
             -derivedDataPath build \
             -clonedSourcePackagesDirPath SourcePackages \
+            -disableAutomaticPackageResolution \
             build 2>&1 | xcbeautify
 
       - name: Package app
