@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Export options for Developer ID distribution.
+  Used by: just export-app
+  
+  method: developer-id = direct distribution (GitHub Releases)
+          app-store = App Store distribution
+  teamID: Your Apple Developer Team ID (find via `just show-certs`)
+  signingStyle: automatic = let Xcode manage signing
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>developer-id</string>
+	<key>teamID</key>
+	<string>NAP6NNQHV6</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+</dict>
+</plist>
