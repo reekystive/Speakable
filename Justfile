@@ -183,6 +183,76 @@ release version apple_id team_id: archive export-app (create-dmg version) (notar
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Version Management
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Reads from project.yml and displays current version info.
+# Show current version and build number
+version:
+    @grep -E "MARKETING_VERSION|CURRENT_PROJECT_VERSION" project.yml | sed 's/^[[:space:]]*//'
+
+# Usage: just bump-version 0.2
+# Updates MARKETING_VERSION in project.yml.
+# Run `just generate` after to apply changes.
+# Update version number (e.g., 0.1 → 0.2)
+bump-version version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    sed -i '' 's/MARKETING_VERSION: ".*"/MARKETING_VERSION: "{{version}}"/' project.yml
+    # Reset build number to 1 for new version
+    sed -i '' 's/CURRENT_PROJECT_VERSION: ".*"/CURRENT_PROJECT_VERSION: "1"/' project.yml
+    echo "Version: {{version}} (build 1)"
+    echo "Run 'just generate' to apply."
+
+# Usage: just bump-build
+# Increments CURRENT_PROJECT_VERSION in project.yml.
+# Use when releasing a new build of the same version.
+# Increment build number (e.g., 1 → 2)
+bump-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    current=$(grep 'CURRENT_PROJECT_VERSION:' project.yml | sed 's/.*"\([^"]*\)".*/\1/')
+    next=$((current + 1))
+    sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$next\"/" project.yml
+    version=$(grep 'MARKETING_VERSION:' project.yml | sed 's/.*"\([^"]*\)".*/\1/')
+    echo "Version: $version (build $next)"
+    echo "Run 'just generate' to apply."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Beta Testing (for sharing with testers before release)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Creates unsigned .app for local/team testing.
+# Testers need to right-click → Open to bypass Gatekeeper.
+# Output: build/beta/Speakable.app
+# Build for beta testing (no notarization)
+beta: generate
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Building for beta testing..."
+    xcodebuild -scheme Speakable \
+        -configuration Release \
+        -derivedDataPath build/beta-derived \
+        build | xcbeautify
+    rm -rf build/beta
+    mkdir -p build/beta
+    cp -R build/beta-derived/Build/Products/Release/Speakable.app build/beta/
+    echo ""
+    echo "Beta build ready: build/beta/Speakable.app"
+    echo "Share via AirDrop, zip, or cloud storage."
+    echo "Testers: right-click → Open to bypass Gatekeeper."
+
+# Creates a zip for easy sharing.
+# Output: build/Speakable-beta.zip
+# Package beta build as zip for sharing
+beta-zip: beta
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd build/beta
+    zip -r ../Speakable-beta.zip Speakable.app
+    echo "Created build/Speakable-beta.zip"
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Utilities
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -202,16 +272,6 @@ xcode: generate
 # Show build settings (signing, bundle ID)
 show-settings:
     xcodebuild -scheme Speakable -configuration Debug -showBuildSettings | grep -E "DEVELOPMENT_TEAM|CODE_SIGN|PRODUCT_BUNDLE"
-
-# Usage: just bump-version 1.1.0
-# Remember to run `just generate` and commit after bumping.
-# Update version in project.yml
-bump-version version:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    sed -i '' 's/MARKETING_VERSION: ".*"/MARKETING_VERSION: "{{version}}"/' project.yml
-    echo "Version bumped to {{version}}"
-    echo "Run 'just generate' to apply, then commit the change."
 
 # Usage: just setup-notarization your@email.com
 # You'll be prompted to enter your App-Specific Password.
