@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build
+        run: |
+          xcodebuild -project OpenAITTS.xcodeproj \
+            -scheme OpenAITTS \
+            -destination 'platform=macOS' \
+            build 2>&1 | xcbeautify
+
+      - name: Test
+        run: |
+          xcodebuild -project OpenAITTS.xcodeproj \
+            -scheme OpenAITTS \
+            -destination 'platform=macOS' \
+            test 2>&1 | xcbeautify
+
+  lint:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Lint
+        run: swiftlint --strict
+
+  format-check:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+
+      - name: Check formatting
+        run: swiftformat --lint .
