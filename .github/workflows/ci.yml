@@ -184,21 +184,11 @@ jobs:
             -disableAutomaticPackageResolution \
             build 2>&1 | xcbeautify
 
-      - name: Package app
-        id: package
-        run: |
-          APP_PATH="build/Build/Products/Release/Speakable.app"
-          ZIP_NAME="Speakable-${GITHUB_SHA::7}.zip"
-
-          # Create zip
-          cd "$(dirname "$APP_PATH")"
-          zip -r -y "$GITHUB_WORKSPACE/$ZIP_NAME" "Speakable.app"
-
-          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
+        env:
+          SHORT_SHA: ${{ github.sha }}
         with:
-          name: Speakable-${{ github.sha }}
-          path: ${{ steps.package.outputs.zip_name }}
+          name: Speakable-${{ env.SHORT_SHA }}
+          path: build/Build/Products/Release/Speakable.app
           retention-days: 30

@@ -23,6 +23,10 @@
 
 --disable blankLinesAtStartOfScope
 --disable blankLinesAtEndOfScope
+--disable wrapPropertyBodies
+--disable noForceUnwrapInTests
+--disable docComments
+--disable blankLinesBetweenScopes
 
 # Excluded paths
 --exclude DerivedData,.build,Pods,Carthage
