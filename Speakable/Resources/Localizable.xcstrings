@@ -264,7 +264,6 @@
       }
     },
     "Settings" : {
-      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -373,12 +372,6 @@
           }
         }
       }
-    },
-    "Test Split View" : {
-
-    },
-    "Test Split View..." : {
-
     },
     "Test Voice" : {
       "extractionState" : "stale",
