@@ -164,7 +164,7 @@ create-zip:
     fi
     echo "Creating zip..."
     rm -f "$ZIP_PATH"
-    COPYFILE_DISABLE=1 ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+    ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
     echo "Created $ZIP_PATH"
 
 # Submit zip to Apple for notarization and staple ticket
@@ -184,7 +184,7 @@ notarize:
     xcrun stapler staple "build/export/Speakable.app"
     echo "Recreating zip with stapled ticket..."
     rm -f "$ZIP_PATH"
-    COPYFILE_DISABLE=1 ditto -c -k --keepParent "build/export/Speakable.app" "$ZIP_PATH"
+    ditto -c -k --sequesterRsrc --keepParent "build/export/Speakable.app" "$ZIP_PATH"
     echo "Notarization complete!"
 
 # Full release: archive → fix sparkle → export → zip → notarize
