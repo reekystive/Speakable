@@ -41,19 +41,12 @@ jobs:
         with:
           path: SourcePackages
           key: ${{ runner.os }}-spm-${{ hashFiles('project.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
 
       - name: Install dependencies
         run: brew install xcodegen xcbeautify
 
       - name: Create Local.xcconfig for CI
-        run: |
-          cat > Local.xcconfig << 'EOF'
-          DEVELOPMENT_TEAM=
-          CODE_SIGN_IDENTITY=-
-          CODE_SIGN_STYLE=Manual
-          EOF
+        run: cp CI.xcconfig Local.xcconfig
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -98,19 +91,12 @@ jobs:
         with:
           path: SourcePackages
           key: ${{ runner.os }}-spm-${{ hashFiles('project.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
 
       - name: Install dependencies
         run: brew install xcodegen xcbeautify
 
       - name: Create Local.xcconfig for CI
-        run: |
-          cat > Local.xcconfig << 'EOF'
-          DEVELOPMENT_TEAM=
-          CODE_SIGN_IDENTITY=-
-          CODE_SIGN_STYLE=Manual
-          EOF
+        run: cp CI.xcconfig Local.xcconfig
 
       - name: Generate Xcode project
         run: xcodegen generate

@@ -1,0 +1,6 @@
+// CI build configuration — no code signing required
+// Used by GitHub Actions: cp CI.xcconfig Local.xcconfig
+
+DEVELOPMENT_TEAM=
+CODE_SIGN_IDENTITY=-
+CODE_SIGN_STYLE=Manual
