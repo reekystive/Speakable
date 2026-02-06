@@ -17,6 +17,16 @@ default:
 generate:
     xcodegen generate
 
+# Generate buildServer.json for xcode-build-server (LSP support)
+setup-lsp: generate
+    #!/usr/bin/env bash
+    set -euo pipefail
+    xcode-build-server config -scheme Speakable -workspace Speakable.xcodeproj/project.xcworkspace
+    # Patch build_root to use local DerivedData instead of Xcode default
+    tmp=$(mktemp)
+    jq '.build_root = "{{justfile_directory()}}/build/derived"' buildServer.json > "$tmp" && mv "$tmp" buildServer.json
+    echo "buildServer.json configured with local DerivedData"
+
 # Build Debug configuration
 build: generate
     xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/derived build | xcbeautify
@@ -172,6 +182,8 @@ notarize:
         --wait
     echo "Stapling notarization ticket..."
     xcrun stapler staple "build/export/Speakable.app"
+    echo "Stripping extended attributes (prevents ._* files on extraction)..."
+    xattr -cr "build/export/Speakable.app"
     echo "Recreating zip with stapled ticket..."
     rm -f "$ZIP_PATH"
     ditto -c -k --keepParent "build/export/Speakable.app" "$ZIP_PATH"
