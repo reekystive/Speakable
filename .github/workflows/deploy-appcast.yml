@@ -22,6 +22,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout gh-pages to /tmp/gh-pages
+        run: |
+          if git fetch origin gh-pages --depth=1 2>/dev/null; then
+            git worktree add /tmp/gh-pages origin/gh-pages
+          else
+            git worktree add --orphan /tmp/gh-pages gh-pages
+          fi
+
       - name: Download Sparkle tools
         run: |
           mkdir -p sparkle-tools
@@ -37,18 +45,16 @@ jobs:
             --pattern '*.zip' \
             --dir staging
 
-      - name: Fetch existing appcast from gh-pages
+      - name: Fetch existing appcast
         continue-on-error: true
-        run: |
-          git fetch origin gh-pages --depth=1 || true
-          git show origin/gh-pages:appcast.xml > staging/appcast.xml 2>/dev/null || true
+        run: cp /tmp/gh-pages/appcast.xml staging/ 2>/dev/null || true
 
       - name: Generate appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key
-          sparkle-tools/bin/generate_appcast \
+          ./sparkle-tools/bin/generate_appcast \
             --ed-key-file /tmp/sparkle_key \
             --download-url-prefix "https://github.com/lennondotw/Speakable/releases/download/${{ github.event.release.tag_name }}/" \
             staging
@@ -56,25 +62,16 @@ jobs:
 
       - name: Deploy to gh-pages branch
         run: |
+          cd /tmp/gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Create orphan gh-pages branch or check it out
-          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
-            git checkout gh-pages
-          else
-            git checkout --orphan gh-pages
-            git rm -rf . || true
-          fi
-
-          # Copy generated content
-          cp staging/appcast.xml .
-          cp docs/index.html . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/staging/appcast.xml" .
+          cp "$GITHUB_WORKSPACE/docs/index.html" . 2>/dev/null || true
 
           echo "Pages content:"
           ls -la appcast.xml index.html
 
-          # Commit and push
           git add appcast.xml index.html
           git diff --cached --quiet && echo "No changes to deploy" && exit 0
           git commit -m "Update appcast for ${{ github.event.release.tag_name }}"
