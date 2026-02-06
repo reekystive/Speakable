@@ -39,16 +39,15 @@ enum AccessibilityPermission {
       &focusedElement
     )
 
-    guard focusError == .success,
-          let focused = focusedElement as? AXUIElement
-    else {
+    guard focusError == .success, let focused = focusedElement else {
       return nil
     }
 
     // Get selected text from focused element
     var selectedText: CFTypeRef?
+    // swiftlint:disable:next force_cast
     let textError = AXUIElementCopyAttributeValue(
-      focused,
+      focused as! AXUIElement,
       kAXSelectedTextAttribute as CFString,
       &selectedText
     )
