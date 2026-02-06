@@ -55,8 +55,8 @@ schemes:
 settings:
   base:
     SWIFT_VERSION: '5.9'
-    MARKETING_VERSION: '0.2.1'
-    CURRENT_PROJECT_VERSION: '13'
+    MARKETING_VERSION: '0.2.2'
+    CURRENT_PROJECT_VERSION: '14'
     DEAD_CODE_STRIPPING: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_EMIT_LOC_STRINGS: YES
@@ -83,6 +83,8 @@ targets:
         ENABLE_OUTGOING_NETWORK_CONNECTIONS: YES
         ENABLE_HARDENED_RUNTIME: YES
         COMBINE_HIDPI_IMAGES: YES
+        # Required for post-build script to copy Sparkle XPC Services into app bundle
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - '@executable_path/../Frameworks'
@@ -99,6 +101,24 @@ targets:
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
           - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
+    postBuildScripts:
+      # Copy Sparkle's XPC Services from the framework to the app bundle's
+      # Contents/XPCServices/ so macOS can discover them regardless of where
+      # the app is installed (framework-embedded XPC Services aren't reliably
+      # registered by launchd from non-standard locations like ~/Applications).
+      - name: Copy Sparkle XPC Services to App Bundle
+        script: |
+          SPARKLE_XPC="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework/Versions/B/XPCServices"
+          APP_XPC="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/XPCServices"
+          if [[ -d "$SPARKLE_XPC" ]]; then
+            mkdir -p "$APP_XPC"
+            for svc in Installer.xpc Downloader.xpc; do
+              if [[ -d "$SPARKLE_XPC/$svc" ]]; then
+                cp -R "$SPARKLE_XPC/$svc" "$APP_XPC/"
+              fi
+            done
+          fi
+        basedOnDependencyAnalysis: false
     dependencies:
       - package: KeyboardShortcuts
       - package: SwiftUIIntrospect
