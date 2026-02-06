@@ -1,0 +1,76 @@
+name: Deploy Appcast
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SPARKLE_VERSION: "2.8.1"
+
+jobs:
+  deploy:
+    name: Generate & Deploy Appcast
+    runs-on: macos-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Sparkle tools
+        run: |
+          mkdir -p sparkle-tools
+          curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" \
+            | tar -xJ -C sparkle-tools --include='./bin/*'
+
+      - name: Download release zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p staging
+          gh release download "${{ github.event.release.tag_name }}" \
+            --pattern '*.zip' \
+            --dir staging
+
+      - name: Fetch existing appcast
+        continue-on-error: true
+        run: |
+          curl -sfL "https://lennondotw.github.io/Speakable/appcast.xml" \
+            -o staging/appcast.xml
+
+      - name: Generate appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key
+          sparkle-tools/bin/generate_appcast \
+            --ed-key-file /tmp/sparkle_key \
+            --download-url-prefix "https://github.com/lennondotw/Speakable/releases/download/${{ github.event.release.tag_name }}/" \
+            staging
+          rm -f /tmp/sparkle_key
+
+      - name: Prepare Pages content
+        run: |
+          mkdir -p _site
+          cp staging/appcast.xml _site/
+          cp docs/index.html _site/
+          echo "Pages content:"
+          ls -la _site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

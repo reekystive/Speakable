@@ -157,44 +157,15 @@ notarize:
     ditto -c -k --keepParent "build/export/Speakable.app" "$ZIP_PATH"
     echo "Notarization complete!"
 
-# Generate or update Sparkle appcast → docs/appcast.xml
-generate-appcast: sparkle-download-tools
-    #!/usr/bin/env bash
-    set -euo pipefail
-    ZIP_PATH="build/Speakable-{{app_version}}.zip"
-    APPCAST_DIR="build/appcast-staging"
-    if [[ ! -f "$ZIP_PATH" ]]; then
-        echo "Error: zip not found at $ZIP_PATH"
-        exit 1
-    fi
-    mkdir -p "$APPCAST_DIR"
-    cp "$ZIP_PATH" "$APPCAST_DIR/"
-    if [[ -f "docs/appcast.xml" ]]; then
-        cp docs/appcast.xml "$APPCAST_DIR/"
-    fi
-    echo "Generating appcast..."
-    build/sparkle-tools/bin/generate_appcast \
-        --account speakable-ed25519 \
-        --download-url-prefix "https://github.com/lennondotw/Speakable/releases/download/v{{app_version}}/" \
-        "$APPCAST_DIR"
-    mkdir -p docs
-    cp "$APPCAST_DIR/appcast.xml" docs/appcast.xml
-    rm -rf "$APPCAST_DIR"
-    echo "Updated docs/appcast.xml"
-
-# Full release: archive → export → zip → notarize → appcast
-release: archive export-app create-zip notarize generate-appcast
+# Full release: archive → export → zip → notarize
+release: archive export-app create-zip notarize
     @echo ""
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     @echo "Release {{app_version}} (build {{app_build}}) complete!"
     @echo "Zip: build/Speakable-{{app_version}}.zip"
-    @echo "Appcast: docs/appcast.xml"
     @echo ""
-    @echo "Next steps:"
-    @echo "  1. Test the zip by extracting and running the app"
-    @echo "  2. Create GitHub Release:"
-    @echo "     gh release create v{{app_version}} build/Speakable-{{app_version}}.zip --title 'v{{app_version}}'"
-    @echo "  3. Commit and push docs/appcast.xml to update the feed"
+    @echo "Next step — create GitHub Release (appcast auto-deploys via CI):"
+    @echo "  gh release create v{{app_version}} build/Speakable-{{app_version}}.zip --title 'v{{app_version}}'"
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ─────────────────────────────────────────────────────────────────────────────

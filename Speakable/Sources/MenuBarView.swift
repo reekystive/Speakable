@@ -67,7 +67,11 @@ struct MenuBarView: View {
     case .error:
       String(localized: "Error")
     case .idle:
-      settings.isConfigured ? String(localized: "Ready") : String(localized: "API Key not set")
+      if settings.isConfigured {
+        String(localized: "Ready")
+      } else {
+        String(localized: "API Key not set")
+      }
     }
   }
 
