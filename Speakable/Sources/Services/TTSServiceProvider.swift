@@ -24,7 +24,7 @@ final class TTSServiceProvider: NSObject {
 
     guard settings.isConfigured else {
       error.pointee = String(localized: "API Key not configured. Please open Speakable settings.") as NSString
-      showNotification(
+      Self.postNotification(
         title: "Speakable",
         body: String(localized: "API Key not configured. Please open the app to set up your API key.")
       )
@@ -48,7 +48,7 @@ final class TTSServiceProvider: NSObject {
   /// Speak text from clipboard
   func speakClipboard() {
     guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
-      showNotification(title: "Speakable", body: String(localized: "Clipboard is empty or contains no text."))
+      Self.postNotification(title: "Speakable", body: String(localized: "Clipboard is empty or contains no text."))
       return
     }
 
@@ -60,7 +60,7 @@ final class TTSServiceProvider: NSObject {
     // Check Accessibility permission first
     guard AccessibilityPermission.isGranted else {
       AccessibilityPermission.request()
-      showNotification(
+      Self.postNotification(
         title: "Speakable",
         body: String(localized: "Accessibility permission required. Please grant access in System Settings.")
       )
@@ -69,7 +69,7 @@ final class TTSServiceProvider: NSObject {
 
     // Get selected text via Accessibility API
     guard let text = AccessibilityPermission.getSelectedText() else {
-      showNotification(title: "Speakable", body: String(localized: "No text selected."))
+      Self.postNotification(title: "Speakable", body: String(localized: "No text selected."))
       return
     }
 
@@ -81,7 +81,7 @@ final class TTSServiceProvider: NSObject {
     let settings = SettingsManager.shared
 
     guard settings.isConfigured else {
-      showNotification(
+      Self.postNotification(
         title: "Speakable",
         body: String(localized: "API Key not configured. Please open the app to set up your API key.")
       )
@@ -132,19 +132,21 @@ final class TTSServiceProvider: NSObject {
         StreamingAudioPlayer.shared.state = .idle
       }
     } catch let error as OpenAIError {
-      DispatchQueue.main.async { [weak self] in
+      let errorMessage = error.localizedDescription
+      DispatchQueue.main.async {
         StreamingAudioPlayer.shared.stop()
-        self?.showNotification(title: "Speakable", body: error.localizedDescription)
+        Self.postNotification(title: "Speakable", body: errorMessage)
       }
     } catch {
-      DispatchQueue.main.async { [weak self] in
+      let errorMessage = error.localizedDescription
+      DispatchQueue.main.async {
         StreamingAudioPlayer.shared.stop()
-        self?.showNotification(title: "Speakable", body: error.localizedDescription)
+        Self.postNotification(title: "Speakable", body: errorMessage)
       }
     }
   }
 
-  private func showNotification(title: String, body: String) {
+  private static func postNotification(title: String, body: String) {
     let center = UNUserNotificationCenter.current()
 
     center.requestAuthorization(options: [.alert, .sound]) { granted, _ in

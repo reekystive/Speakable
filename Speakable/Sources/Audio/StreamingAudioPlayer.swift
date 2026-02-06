@@ -82,10 +82,7 @@ final class StreamingAudioPlayer: ObservableObject {
   private func waitForPlaybackCompletion() async {
     // Wait until all scheduled buffers have finished playing
     while true {
-      bufferLock.lock()
-      let count = pendingBufferCount
-      bufferLock.unlock()
-
+      let count = bufferLock.withLock { pendingBufferCount }
       if count == 0 { break }
       try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
     }
