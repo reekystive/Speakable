@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Speakable</title>
+        <item>
+            <title>0.1.3</title>
+            <pubDate>Fri, 06 Feb 2026 10:35:20 +0000</pubDate>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/lennondotw/Speakable/releases/download/v0.1.3/Speakable-0.1.3.zip" length="1663930" type="application/octet-stream" sparkle:edSignature="aHn2//GCEL9Njmiu0zQ93l7M0avWDafogLR727Ti+YUocuFTWZEuTxP5XhJ6kjOF4hUUpqs+Z9ZiWUONpFq8DQ=="/>
+        </item>
+    </channel>
+</rss>
