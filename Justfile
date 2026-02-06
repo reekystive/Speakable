@@ -1,7 +1,12 @@
 # Speakable - macOS TTS App
 # Run `just` or `just --list` to see all available commands
 
-# Default: show help
+# Auto-derived from project.yml
+app_version := `grep 'MARKETING_VERSION:' project.yml | sed 's/.*"\([^"]*\)".*/\1/'`
+app_build   := `grep 'CURRENT_PROJECT_VERSION:' project.yml | sed 's/.*"\([^"]*\)".*/\1/'`
+
+sparkle_version := "2.8.1"
+
 default:
     @just --list
 
@@ -9,18 +14,15 @@ default:
 # Development
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Run this after modifying project.yml or pulling changes.
-# Generate Xcode project from project.yml using XcodeGen
+# Generate Xcode project from project.yml
 generate:
     xcodegen generate
 
-# Output: build/derived/Build/Products/Debug/Speakable Debug.app
 # Build Debug configuration
 build: generate
     xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/derived build | xcbeautify
 
-# Output: build/derived/Build/Products/Release/Speakable.app
-# Build Release configuration (optimized, no debug symbols)
+# Build Release configuration
 build-release: generate
     xcodebuild -scheme Speakable -configuration Release -derivedDataPath build/derived build | xcbeautify
 
@@ -28,55 +30,43 @@ build-release: generate
 kill-debug:
     @-pkill -x "Speakable Debug" 2>/dev/null || true
 
-# Opens the already-built Debug app (no rebuild).
-# Requires prior `just build`.
-# Run app without building
+# Run already-built Debug app (requires prior `just build`)
 run-built:
     open "build/derived/Build/Products/Debug/Speakable Debug.app"
 
-# Build and run the app in Debug mode.
-# Build then run
+# Build and run Debug
 run: kill-debug build run-built
 
-# Run tests without rebuilding.
-# Requires prior `just test-build`.
-# Run tests only
+# Run tests without rebuilding (requires prior `just test-build`)
 test-run:
     xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/derived test-without-building | xcbeautify
 
-# Build for testing only (no run).
-# Build for testing
+# Build for testing only
 test-build: generate
     xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/derived build-for-testing | xcbeautify
 
-# Build and run unit tests.
-# Build then test
+# Build and run unit tests
 test: test-build test-run
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Code Quality
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Uses .swiftlint.yml for configuration. Fails on any warning (--strict).
-# Run SwiftLint to check code style
+# Run SwiftLint (fails on warnings)
 lint:
     swiftlint --strict
 
-# Uses .swiftformat for configuration. Exit code 1 if formatting needed.
-# Check formatting without making changes
+# Check formatting without changes
 format-check:
     swiftformat --lint .
 
-# Modifies files in place according to .swiftformat rules.
-# Apply SwiftFormat to fix formatting
+# Apply SwiftFormat
 format:
     swiftformat .
 
-# Useful for pre-commit verification.
 # Run all checks (lint + format)
 check: lint format-check
 
-# Review changes with `git diff` after running.
 # Auto-fix all fixable issues
 fix:
     swiftlint --fix
@@ -86,33 +76,27 @@ fix:
 # Cleanup
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Does not remove Xcode project or Swift packages.
 # Clean build artifacts
 clean:
     rm -rf build/
     @echo "Cleaned build artifacts"
 
-# Run `just generate` to recreate it.
-# Remove generated Xcode project
+# Remove generated Xcode project (run `just generate` to recreate)
 clean-project:
     rm -rf Speakable.xcodeproj
     @echo "Cleaned Xcode project"
 
-# Full clean slate - next build will re-download all dependencies.
-# Clean everything (build, project, packages)
+# Clean everything (build + project + packages)
 clean-all: clean clean-project
     rm -rf SourcePackages/
     @echo "Cleaned everything"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Release
-# Requires: Developer ID Application certificate
-# Setup: https://developer.apple.com/account/resources/certificates
+# Requires: Developer ID certificate + `just setup-notarization` (one-time)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Output: build/Speakable.xcarchive
-# Next step: just export-app
-# Create Release archive for distribution
+# Create Release archive → build/Speakable.xcarchive
 archive: generate
     #!/usr/bin/env bash
     set -euo pipefail
@@ -123,11 +107,7 @@ archive: generate
         archive | xcbeautify
     echo "Archive created at build/Speakable.xcarchive"
 
-# Requires: Developer ID Application certificate in Keychain.
-# Uses ExportOptions.plist for signing configuration.
-# Output: build/export/Speakable.app
-# Next step: just create-dmg <version>
-# Export signed .app from archive
+# Export signed .app from archive → build/export/Speakable.app
 export-app:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -142,107 +122,146 @@ export-app:
         -exportOptionsPlist ExportOptions.plist | xcbeautify
     echo "Exported to build/export/"
 
-# Usage: just create-dmg 1.0.0
-# Output: build/Speakable-<version>.dmg
-# Next step: just notarize <version> <apple_id> <team_id>
-# Create DMG disk image from exported app
-create-dmg version:
+# Create zip from exported app → build/Speakable-<version>.zip
+create-zip:
     #!/usr/bin/env bash
     set -euo pipefail
     APP_PATH="build/export/Speakable.app"
-    DMG_PATH="build/Speakable-{{version}}.dmg"
+    ZIP_PATH="build/Speakable-{{app_version}}.zip"
     if [[ ! -d "$APP_PATH" ]]; then
         echo "Error: App not found. Run 'just export-app' first."
         exit 1
     fi
-    echo "Creating DMG..."
-    rm -f "$DMG_PATH"
-    hdiutil create -volname "Speakable" \
-        -srcfolder "$APP_PATH" \
-        -ov -format UDZO \
-        "$DMG_PATH"
-    echo "Created $DMG_PATH"
+    echo "Creating zip..."
+    rm -f "$ZIP_PATH"
+    ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+    echo "Created $ZIP_PATH"
 
-# Usage: just notarize 1.0.0 your@email.com NAP6NNQHV6
-# Requires: App-Specific Password stored in Keychain as "AC_PASSWORD".
-# Setup: just setup-notarization <apple_id>
-# Submit DMG to Apple for notarization
-notarize version apple_id team_id:
+# Submit zip to Apple for notarization and staple ticket
+notarize:
     #!/usr/bin/env bash
     set -euo pipefail
-    DMG_PATH="build/Speakable-{{version}}.dmg"
-    if [[ ! -f "$DMG_PATH" ]]; then
-        echo "Error: DMG not found. Run 'just create-dmg {{version}}' first."
+    ZIP_PATH="build/Speakable-{{app_version}}.zip"
+    if [[ ! -f "$ZIP_PATH" ]]; then
+        echo "Error: zip not found. Run 'just create-zip' first."
         exit 1
     fi
     echo "Submitting for notarization..."
-    xcrun notarytool submit "$DMG_PATH" \
-        --apple-id "{{apple_id}}" \
-        --team-id "{{team_id}}" \
-        --password "@keychain:AC_PASSWORD" \
+    xcrun notarytool submit "$ZIP_PATH" \
+        --keychain-profile "AC_PASSWORD" \
         --wait
     echo "Stapling notarization ticket..."
-    xcrun stapler staple "$DMG_PATH"
+    xcrun stapler staple "build/export/Speakable.app"
+    echo "Recreating zip with stapled ticket..."
+    rm -f "$ZIP_PATH"
+    ditto -c -k --keepParent "build/export/Speakable.app" "$ZIP_PATH"
     echo "Notarization complete!"
 
-# Usage: just release 1.0.0 your@email.com NAP6NNQHV6
-# Runs: archive → export-app → create-dmg → notarize
-# Output: build/Speakable-<version>.dmg (signed and notarized)
-# Full release workflow
-release version apple_id team_id: archive export-app (create-dmg version) (notarize version apple_id team_id)
+# Generate or update Sparkle appcast → docs/appcast.xml
+generate-appcast: sparkle-download-tools
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ZIP_PATH="build/Speakable-{{app_version}}.zip"
+    APPCAST_DIR="build/appcast-staging"
+    if [[ ! -f "$ZIP_PATH" ]]; then
+        echo "Error: zip not found at $ZIP_PATH"
+        exit 1
+    fi
+    mkdir -p "$APPCAST_DIR"
+    cp "$ZIP_PATH" "$APPCAST_DIR/"
+    if [[ -f "docs/appcast.xml" ]]; then
+        cp docs/appcast.xml "$APPCAST_DIR/"
+    fi
+    echo "Generating appcast..."
+    build/sparkle-tools/bin/generate_appcast \
+        --account speakable-ed25519 \
+        --download-url-prefix "https://github.com/lennondotw/Speakable/releases/download/v{{app_version}}/" \
+        "$APPCAST_DIR"
+    mkdir -p docs
+    cp "$APPCAST_DIR/appcast.xml" docs/appcast.xml
+    rm -rf "$APPCAST_DIR"
+    echo "Updated docs/appcast.xml"
+
+# Full release: archive → export → zip → notarize → appcast
+release: archive export-app create-zip notarize generate-appcast
     @echo ""
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    @echo "Release {{version}} complete!"
-    @echo "DMG: build/Speakable-{{version}}.dmg"
+    @echo "Release {{app_version}} (build {{app_build}}) complete!"
+    @echo "Zip: build/Speakable-{{app_version}}.zip"
+    @echo "Appcast: docs/appcast.xml"
     @echo ""
     @echo "Next steps:"
-    @echo "  1. Test the DMG by mounting and running the app"
-    @echo "  2. Create GitHub Release: gh release create v{{version}} build/Speakable-{{version}}.dmg"
+    @echo "  1. Test the zip by extracting and running the app"
+    @echo "  2. Create GitHub Release:"
+    @echo "     gh release create v{{app_version}} build/Speakable-{{app_version}}.zip --title 'v{{app_version}}'"
+    @echo "  3. Commit and push docs/appcast.xml to update the feed"
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sparkle Tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Download Sparkle CLI tools (one-time)
+sparkle-download-tools:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TOOLS_DIR="build/sparkle-tools"
+    if [[ -d "$TOOLS_DIR/bin" ]]; then
+        echo "Sparkle tools already present at $TOOLS_DIR"
+        exit 0
+    fi
+    echo "Downloading Sparkle {{sparkle_version}} tools..."
+    mkdir -p "$TOOLS_DIR"
+    curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/{{sparkle_version}}/Sparkle-{{sparkle_version}}.tar.xz" \
+        | tar -xJ -C "$TOOLS_DIR" --include='./bin/*'
+    echo "Sparkle tools installed to $TOOLS_DIR/bin/"
+    ls "$TOOLS_DIR/bin/"
+
+# Generate Sparkle EdDSA signing keys (one-time)
+sparkle-generate-keys: sparkle-download-tools
+    build/sparkle-tools/bin/generate_keys --account speakable-ed25519
+
+# Show Sparkle EdDSA public key
+sparkle-show-public-key: sparkle-download-tools
+    build/sparkle-tools/bin/generate_keys -p --account speakable-ed25519
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Version Management
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Reads from project.yml and displays current version info.
 # Show current version and build number
 version:
-    @grep -E "MARKETING_VERSION|CURRENT_PROJECT_VERSION" project.yml | sed 's/^[[:space:]]*//'
+    @echo "{{app_version}} (build {{app_build}})"
 
-# Usage: just bump-version 0.2
-# Updates MARKETING_VERSION in project.yml.
-# Run `just generate` after to apply changes.
-# Update version number (e.g., 0.1 → 0.2)
-bump-version version:
+# Bump version: just bump-version major | minor | patch | 1.2.3
+bump-version part:
     #!/usr/bin/env bash
     set -euo pipefail
-    sed -i '' 's/MARKETING_VERSION: ".*"/MARKETING_VERSION: "{{version}}"/' project.yml
-    # Reset build number to 1 for new version
-    sed -i '' 's/CURRENT_PROJECT_VERSION: ".*"/CURRENT_PROJECT_VERSION: "1"/' project.yml
-    echo "Version: {{version}} (build 1)"
+    current="{{app_version}}"
+    IFS='.' read -r major minor patch <<< "$current"
+    case "{{part}}" in
+        major) new="$((major + 1)).0.0" ;;
+        minor) new="${major}.$((minor + 1)).0" ;;
+        patch) new="${major}.${minor}.$((patch + 1))" ;;
+        *)     new="{{part}}" ;;
+    esac
+    sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"$new\"/" project.yml
+    echo "Version: $current → $new (build {{app_build}})"
     echo "Run 'just generate' to apply."
 
-# Usage: just bump-build
-# Increments CURRENT_PROJECT_VERSION in project.yml.
-# Use when releasing a new build of the same version.
-# Increment build number (e.g., 1 → 2)
+# Increment build number
 bump-build:
     #!/usr/bin/env bash
     set -euo pipefail
-    current=$(grep 'CURRENT_PROJECT_VERSION:' project.yml | sed 's/.*"\([^"]*\)".*/\1/')
-    next=$((current + 1))
+    next=$(({{app_build}} + 1))
     sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$next\"/" project.yml
-    version=$(grep 'MARKETING_VERSION:' project.yml | sed 's/.*"\([^"]*\)".*/\1/')
-    echo "Version: $version (build $next)"
+    echo "Version: {{app_version}} (build {{app_build}} → $next)"
     echo "Run 'just generate' to apply."
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Beta Testing (for sharing with testers before release)
+# Beta Testing
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Creates unsigned .app for local/team testing.
-# Testers need to right-click → Open to bypass Gatekeeper.
-# Output: build/beta/Speakable.app
 # Build for beta testing (no notarization)
 beta: generate
     #!/usr/bin/env bash
@@ -257,12 +276,9 @@ beta: generate
     cp -R build/beta-derived/Build/Products/Release/Speakable.app build/beta/
     echo ""
     echo "Beta build ready: build/beta/Speakable.app"
-    echo "Share via AirDrop, zip, or cloud storage."
     echo "Testers: right-click → Open to bypass Gatekeeper."
 
-# Creates a zip for easy sharing.
-# Output: build/Speakable-beta.zip
-# Package beta build as zip for sharing
+# Package beta build as zip
 beta-zip: beta
     #!/usr/bin/env bash
     set -euo pipefail
@@ -274,28 +290,19 @@ beta-zip: beta
 # Utilities
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Look for "Developer ID Application" for distribution.
-# "Apple Development" is for debug builds only.
-# List code signing certificates in Keychain
+# List code signing certificates
 show-certs:
-    @echo "Code signing identities:"
     @security find-identity -v -p codesigning
 
-# Generates project first if needed.
 # Open project in Xcode
 xcode: generate
     open Speakable.xcodeproj
 
-# Useful for debugging code signing issues.
 # Show build settings (signing, bundle ID)
 show-settings:
     xcodebuild -scheme Speakable -configuration Debug -showBuildSettings | grep -E "DEVELOPMENT_TEAM|CODE_SIGN|PRODUCT_BUNDLE"
 
-# Usage: just setup-notarization your@email.com
-# You'll be prompted to enter your App-Specific Password.
-# Get password at: https://appleid.apple.com → App-Specific Passwords
-# Store notarization credentials in Keychain
+# Store notarization credentials in Keychain (one-time)
 setup-notarization apple_id:
-    @echo "Storing notarization credentials in Keychain..."
-    @echo "You'll need an App-Specific Password from https://appleid.apple.com"
+    @echo "You'll need an App-Specific Password from https://account.apple.com"
     xcrun notarytool store-credentials AC_PASSWORD --apple-id "{{apple_id}}" --team-id NAP6NNQHV6

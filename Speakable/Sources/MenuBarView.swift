@@ -4,6 +4,7 @@ struct MenuBarView: View {
   @Environment(\.openWindow) private var openWindow
   @StateObject private var settings = SettingsManager.shared
   @StateObject private var player = StreamingAudioPlayer.shared
+  @StateObject private var updater = UpdaterController.shared
 
   var body: some View {
     Group {
@@ -13,6 +14,7 @@ struct MenuBarView: View {
       speakActionsSection
       playbackSection
       Divider()
+      checkForUpdatesButton
       settingsButton
       quitButton
     }
@@ -105,6 +107,15 @@ struct MenuBarView: View {
     case .idle, .error:
       EmptyView()
     }
+  }
+
+  // MARK: - Update
+
+  private var checkForUpdatesButton: some View {
+    Button("Check for Updates...") {
+      updater.checkForUpdates()
+    }
+    .disabled(!updater.canCheckForUpdates)
   }
 
   // MARK: - Menu Buttons

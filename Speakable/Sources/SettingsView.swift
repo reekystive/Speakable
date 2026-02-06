@@ -82,6 +82,7 @@ struct SettingsView: View {
 
 private struct GeneralSettingsView: View {
   @StateObject private var settings = SettingsManager.shared
+  @StateObject private var updater = UpdaterController.shared
   @State private var showingAPIKeyField = false
 
   var body: some View {
@@ -118,6 +119,23 @@ private struct GeneralSettingsView: View {
         Text("OpenAI")
       } footer: {
         Text("Your API key is stored securely in the macOS Keychain.")
+      }
+
+      Section {
+        Toggle(
+          "Automatically check for updates",
+          isOn: Binding(
+            get: { updater.automaticallyChecksForUpdates },
+            set: { updater.automaticallyChecksForUpdates = $0 }
+          )
+        )
+
+        Button("Check for Updates...") {
+          updater.checkForUpdates()
+        }
+        .disabled(!updater.canCheckForUpdates)
+      } header: {
+        Text("Software Update")
       }
     }
     .formStyle(.grouped)
