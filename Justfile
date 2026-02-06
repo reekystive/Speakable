@@ -24,16 +24,16 @@ setup-lsp: generate
     xcode-build-server config -scheme Speakable -workspace Speakable.xcodeproj/project.xcworkspace
     # Patch build_root to use local DerivedData instead of Xcode default
     tmp=$(mktemp)
-    jq '.build_root = "{{justfile_directory()}}/build/DerivedData"' buildServer.json > "$tmp" && mv "$tmp" buildServer.json
+    jq '.build_root = "{{justfile_directory()}}/build/DerivedData/Speakable"' buildServer.json > "$tmp" && mv "$tmp" buildServer.json
     echo "buildServer.json configured with local DerivedData"
 
 # Build Debug configuration
 build: generate
-    xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/DerivedData build | xcbeautify
+    xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/DerivedData/Speakable build | xcbeautify
 
 # Build Release configuration
 build-release: generate
-    xcodebuild -scheme Speakable -configuration Release -derivedDataPath build/DerivedData build | xcbeautify
+    xcodebuild -scheme Speakable -configuration Release -derivedDataPath build/DerivedData/Speakable build | xcbeautify
 
 # Kill running Debug app (if any)
 kill-debug:
@@ -41,18 +41,29 @@ kill-debug:
 
 # Run already-built Debug app (requires prior `just build`)
 run-built:
-    open "build/DerivedData/Build/Products/Debug/Speakable Debug.app"
+    open "build/DerivedData/Speakable/Build/Products/Debug/Speakable Debug.app"
 
 # Build and run Debug
 run: kill-debug build run-built
 
+# Run already-built Debug app in foreground (stdout/stderr in terminal)
+run-built-fg:
+    "build/DerivedData/Speakable/Build/Products/Debug/Speakable Debug.app/Contents/MacOS/Speakable Debug"
+
+# Build and run Debug in foreground (stdout/stderr in terminal)
+run-fg: kill-debug build run-built-fg
+
+# Stream app logs filtered by Speakable subsystem (Ctrl-C to stop)
+logs:
+    log stream --level debug --predicate 'subsystem BEGINSWITH "sh.lennon.Speakable"'
+
 # Run tests without rebuilding (requires prior `just test-build`)
 test-run:
-    xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/DerivedData test-without-building | xcbeautify
+    xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/DerivedData/Speakable test-without-building | xcbeautify
 
 # Build for testing only
 test-build: generate
-    xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/DerivedData build-for-testing | xcbeautify
+    xcodebuild -scheme Speakable -configuration Debug -derivedDataPath build/DerivedData/Speakable build-for-testing | xcbeautify
 
 # Build and run unit tests
 test: test-build test-run
@@ -249,11 +260,11 @@ beta: generate
     echo "Building for beta testing..."
     xcodebuild -scheme Speakable \
         -configuration Release \
-        -derivedDataPath build/DerivedData \
+        -derivedDataPath build/DerivedData/Speakable \
         build | xcbeautify
     rm -rf build/beta
     mkdir -p build/beta
-    cp -R build/DerivedData/Build/Products/Release/Speakable.app build/beta/
+    cp -R build/DerivedData/Speakable/Build/Products/Release/Speakable.app build/beta/
     echo ""
     echo "Beta build ready: build/beta/Speakable.app"
     echo "Testers: right-click → Open to bypass Gatekeeper."

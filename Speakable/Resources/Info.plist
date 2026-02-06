@@ -30,8 +30,6 @@
     <string>https://lennondotw.github.io/Speakable/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>2vU5uR4CkqNRLUwb6Bd1/FYgPw3OTCZDWZg9YtK9prs=</string>
-    <key>SUEnableInstallerLauncherService</key>
-    <true/>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSServices</key>

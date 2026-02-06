@@ -97,14 +97,15 @@ targets:
       path: Speakable/Resources/Speakable.entitlements
     postBuildScripts:
       # Sparkle's SPM XCFramework ships non-standard root symlinks (Autoupdate,
-      # Updater.app, XPCServices) that cause "unsealed contents" code signing
-      # errors. Remove them so export-archive re-signs a clean framework.
+      # Updater.app) that cause "unsealed contents" code signing errors.
+      # Remove them so export-archive re-signs a clean framework.
+      # Note: XPCServices symlink is standard framework structure — do NOT remove it.
       # Ref: https://steipete.me/posts/2025/code-signing-and-notarization-sparkle-and-tears
       - name: Fix Sparkle Framework Structure
         script: |
           FRAMEWORK="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework"
           if [[ -d "$FRAMEWORK" ]]; then
-            for link in Autoupdate Updater.app XPCServices; do
+            for link in Autoupdate Updater.app; do
               [[ -L "$FRAMEWORK/$link" ]] && rm "$FRAMEWORK/$link" || true
             done
           fi

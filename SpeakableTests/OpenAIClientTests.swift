@@ -13,8 +13,9 @@ final class OpenAIClientTests: XCTestCase {
   func testOpenAIErrorTextTooLongDescription() {
     let error = OpenAIError.textTooLong(length: 5000, maxLength: 4096)
     XCTAssertNotNil(error.errorDescription)
-    XCTAssertTrue(error.errorDescription!.contains("5000"))
-    XCTAssertTrue(error.errorDescription!.contains("4096"))
+    // String(localized:) applies locale-aware number formatting
+    XCTAssertTrue(error.errorDescription!.contains(5000.formatted()))
+    XCTAssertTrue(error.errorDescription!.contains(4096.formatted()))
   }
 
   func testOpenAIErrorAPIErrorDescription() {

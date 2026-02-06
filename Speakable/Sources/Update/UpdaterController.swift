@@ -1,3 +1,4 @@
+import OSLog
 import Sparkle
 import SwiftUI
 
@@ -18,21 +19,39 @@ final class UpdaterController: ObservableObject {
     set { updaterController.updater.automaticallyChecksForUpdates = newValue }
   }
 
+  private static let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Speakable",
+    category: "Update"
+  )
+
   private let updaterController: SPUStandardUpdaterController
 
   private init() {
     updaterController = SPUStandardUpdaterController(
-      startingUpdater: true,
+      startingUpdater: false,
       updaterDelegate: nil,
       userDriverDelegate: nil
     )
 
     updaterController.updater.publisher(for: \.canCheckForUpdates)
       .assign(to: &$canCheckForUpdates)
+
+    start()
   }
 
   /// Triggers a user-initiated update check.
   func checkForUpdates() {
     updaterController.checkForUpdates(nil)
+  }
+
+  // MARK: - Private
+
+  private func start() {
+    do {
+      try updaterController.updater.start()
+      Self.logger.info("Sparkle updater started successfully")
+    } catch {
+      Self.logger.error("Sparkle updater failed to start: \(error)")
+    }
   }
 }
