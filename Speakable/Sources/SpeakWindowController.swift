@@ -17,7 +17,11 @@ final class SpeakWindowController {
       return
     }
 
-    let contentRect = NSRect(x: 0, y: 0, width: 500, height: 100)
+    let contentRect = NSRect(
+      x: 0, y: 0,
+      width: SpeakWindow.fixedWidth,
+      height: SpeakWindow.windowMinHeight
+    )
     let newWindow = SpeakWindow(
       contentRect: contentRect,
       styleMask: [.borderless, .nonactivatingPanel],

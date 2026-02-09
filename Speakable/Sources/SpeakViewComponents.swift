@@ -80,9 +80,14 @@ struct SpeakTextEditor: NSViewRepresentable {
       guard let textView else { return }
       textView.layoutManager?.ensureLayout(for: textView.textContainer!)
       let height = textView.layoutManager?.usedRect(for: textView.textContainer!).height ?? 20
-      DispatchQueue.main.async {
-        self.parent.textHeight = max(height, 20)
-      }
+      let newTextHeight = max(height, 20)
+
+      // Update binding for SwiftUI state
+      parent.textHeight = newTextHeight
+
+      // Synchronously resize the window in the same frame as the text layout
+      // change, preventing any one-frame jitter from SwiftUI's async state pipeline.
+      SpeakWindow.updateFrame(forTextHeight: newTextHeight)
     }
   }
 }
@@ -91,6 +96,22 @@ struct SpeakTextEditor: NSViewRepresentable {
 
 final class SubmitTextView: NSTextView {
   var onSubmit: (() -> Void)?
+
+  // Only claim hits inside the actual text content area;
+  // padding (textContainerInset) falls through to the window
+  // background, enabling drag via isMovableByWindowBackground.
+  override func hitTest(_ point: NSPoint) -> NSView? {
+    let local = convert(point, from: superview)
+    let inset = textContainerInset
+    let textRect = NSRect(
+      x: inset.width,
+      y: inset.height,
+      width: bounds.width - inset.width * 2,
+      height: bounds.height - inset.height
+    )
+    guard textRect.contains(local) else { return nil }
+    return super.hitTest(point)
+  }
 
   override func keyDown(with event: NSEvent) {
     // Enter key without Shift = submit
@@ -105,15 +126,19 @@ final class SubmitTextView: NSTextView {
 // MARK: - Visual Effect Background
 
 struct VisualEffectBackground: NSViewRepresentable {
+  var material: NSVisualEffectView.Material = .popover
+
   func makeNSView(context: Context) -> NSVisualEffectView {
     let view = NSVisualEffectView()
-    view.material = .popover
+    view.material = material
     view.blendingMode = .behindWindow
     view.state = .active
     return view
   }
 
-  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+    nsView.material = material
+  }
 }
 
 // MARK: - Toolbar Popover Button
@@ -142,4 +167,45 @@ struct ToolbarPopoverButton<Content: View>: View {
       content()
     }
   }
+}
+
+// MARK: - Standard Close Button
+
+/// Wraps the native macOS traffic-light close button via
+/// `NSWindow.standardWindowButton(.closeButton, for: .titled)`.
+struct StandardCloseButton: NSViewRepresentable {
+  let onClose: () -> Void
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(onClose: onClose)
+  }
+
+  func makeNSView(context: Context) -> NSView {
+    guard let button = NSWindow.standardWindowButton(.closeButton, for: .titled) else {
+      return NSView()
+    }
+    button.target = context.coordinator
+    button.action = #selector(Coordinator.performClose)
+    return button
+  }
+
+  func updateNSView(_ nsView: NSView, context: Context) {}
+
+  class Coordinator: NSObject {
+    let onClose: () -> Void
+
+    init(onClose: @escaping () -> Void) {
+      self.onClose = onClose
+    }
+
+    @objc func performClose() {
+      onClose()
+    }
+  }
+}
+
+#Preview("StandardCloseButton") {
+  StandardCloseButton(onClose: {})
+    .frame(width: 14, height: 14)
+    .padding()
 }

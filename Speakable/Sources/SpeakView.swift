@@ -9,10 +9,6 @@ struct SpeakView: View {
   @State private var temporaryVoice: TTSVoice?
   @State private var textHeight: CGFloat = 40
 
-  private let minHeight: CGFloat = 100
-  private let maxHeight: CGFloat = 360
-  private let toolbarHeight: CGFloat = 54
-
   private var effectiveSpeed: Double {
     temporarySpeed ?? settings.speechSpeed
   }
@@ -21,42 +17,69 @@ struct SpeakView: View {
     temporaryVoice ?? settings.selectedVoice
   }
 
-  private var windowHeight: CGFloat {
-    let contentHeight = textHeight + toolbarHeight + 32
-    return min(max(contentHeight, minHeight), maxHeight)
+  var body: some View {
+    VStack(spacing: SpeakWindow.titleBarGap) {
+      // Floating title bar
+      titleBar
+
+      // Main content
+      ZStack {
+        // Native material background
+        VisualEffectBackground()
+
+        // Content
+        ZStack(alignment: .bottom) {
+          // Text editor with gradient mask at bottom
+          textArea
+            .mask(
+              VStack(spacing: 0) {
+                Color.black
+
+                LinearGradient(
+                  colors: [.black, .clear],
+                  startPoint: .top,
+                  endPoint: .bottom
+                )
+                .frame(height: 40)
+              }
+              .padding(.bottom, 44)
+            )
+
+          // Floating toolbar
+          toolbar
+        }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
   }
 
-  var body: some View {
-    ZStack {
-      // Native material background
-      VisualEffectBackground()
+  // MARK: - Title Bar
 
-      // Content
-      ZStack(alignment: .bottom) {
-        // Text editor with gradient mask at bottom
-        textArea
-          .mask(
-            VStack(spacing: 0) {
-              Color.black
-
-              LinearGradient(
-                colors: [.black, .clear],
-                startPoint: .top,
-                endPoint: .bottom
-              )
-              .frame(height: 40)
-            }
-            .padding(.bottom, 44)
-          )
-
-        // Floating toolbar
-        toolbar
+  private var titleBar: some View {
+    HStack {
+      // Native close button
+      StandardCloseButton {
+        NSApp.windows.first(where: { $0 is SpeakWindow })?.close()
       }
+      .frame(width: 14, height: 14)
+
+      Spacer()
+
+      // Title
+      Text("Speakable")
+        .font(.system(size: 13, weight: .medium))
+        .foregroundStyle(.secondary)
+
+      Spacer()
+
+      // Spacer for symmetry
+      Color.clear
+        .frame(width: 14, height: 14)
     }
-    .clipShape(RoundedRectangle(cornerRadius: 20))
-    .onChange(of: textHeight) { _, _ in
-      updateWindowHeight()
-    }
+    .padding(.horizontal, 14)
+    .frame(height: SpeakWindow.titleBarHeight)
+    .background(VisualEffectBackground(material: .titlebar))
+    .clipShape(Capsule())
   }
 
   // MARK: - Text Area
@@ -276,27 +299,6 @@ struct SpeakView: View {
     }
   }
 
-  private func updateWindowHeight() {
-    guard let window = NSApp.windows.first(where: { $0 is SpeakWindow }) else { return }
-
-    let contentHeight = textHeight + toolbarHeight + 32
-    let newHeight = min(max(contentHeight, minHeight), maxHeight)
-
-    var frame = window.frame
-    let oldHeight = frame.height
-
-    guard abs(newHeight - oldHeight) > 1 else { return }
-
-    // Keep top edge fixed, move bottom edge
-    frame.origin.y += oldHeight - newHeight
-    frame.size.height = newHeight
-
-    NSAnimationContext.runAnimationGroup { context in
-      context.duration = 0.15
-      context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-      window.animator().setFrame(frame, display: true)
-    }
-  }
 }
 
 // MARK: - Preview
