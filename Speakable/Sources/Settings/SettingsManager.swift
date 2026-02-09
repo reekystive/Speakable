@@ -110,7 +110,7 @@ final class SettingsManager: ObservableObject {
     selectedVoice = .alloy
     selectedModel = .gpt4oMiniTTS
     speechSpeed = 1.0
-    voiceInstructions = ""
+    voiceInstructions = "Speak cheerfully."
 
     loadSettings()
   }
