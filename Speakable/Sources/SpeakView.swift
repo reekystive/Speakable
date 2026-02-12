@@ -56,7 +56,7 @@ struct SpeakView: View {
       StandardCloseButton {
         NSApp.windows.first(where: { $0 is SpeakWindow })?.close()
       }
-      .frame(width: 14, height: 14)
+      .frame(width: 12, height: 12)
 
       // Title (left-aligned)
       Text("Speakable")

@@ -77,4 +77,26 @@ final class SpeakWindow: NSPanel {
   override func cancelOperation(_ sender: Any?) {
     close()
   }
+
+  // Handle keyboard shortcuts for borderless window
+  // Use performKeyEquivalent instead of keyDown because NSTextView intercepts keyDown
+  override func performKeyEquivalent(with event: NSEvent) -> Bool {
+    guard event.modifierFlags.contains(.command),
+          event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            .subtracting([.command, .numericPad, .function]) .isEmpty
+    else {
+      return super.performKeyEquivalent(with: event)
+    }
+
+    switch event.charactersIgnoringModifiers {
+    case "w":
+      close()
+      return true
+    case "h":
+      NSApp.hide(nil)
+      return true
+    default:
+      return super.performKeyEquivalent(with: event)
+    }
+  }
 }

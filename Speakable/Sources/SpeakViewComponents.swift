@@ -193,3 +193,4 @@ struct StandardCloseButton: NSViewRepresentable {
     .frame(width: 14, height: 14)
     .padding()
 }
+
