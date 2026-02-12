@@ -20,7 +20,7 @@ final class SpeakWindowController {
     let contentRect = NSRect(
       x: 0, y: 0,
       width: SpeakWindow.fixedWidth,
-      height: SpeakWindow.windowMinHeight
+      height: SpeakWindow.fixedHeight
     )
     let newWindow = SpeakWindow(
       contentRect: contentRect,
@@ -39,6 +39,14 @@ final class SpeakWindowController {
       name: NSWindow.willCloseNotification,
       object: newWindow
     )
+
+    // Shift the window down so the visible content (initially at minimum
+    // height at the top of the fixed frame) appears centered on screen.
+    let minVisibleHeight = SpeakWindow.contentMinHeight + SpeakWindow.titleBarHeight + SpeakWindow.titleBarGap
+    let offset = (SpeakWindow.fixedHeight - minVisibleHeight) / 2
+    var origin = newWindow.frame.origin
+    origin.y -= offset
+    newWindow.setFrameOrigin(origin)
 
     window = newWindow
     newWindow.makeKeyAndOrderFront(nil)

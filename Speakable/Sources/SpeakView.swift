@@ -7,7 +7,12 @@ struct SpeakView: View {
   @State private var text = ""
   @State private var temporarySpeed: Double?
   @State private var temporaryVoice: TTSVoice?
-  @State private var textHeight: CGFloat = 40
+  @State private var textHeight: CGFloat = 20
+
+  /// The visible height of the content area, derived from the text height.
+  private var visibleContentHeight: CGFloat {
+    SpeakWindow.contentHeight(forTextHeight: textHeight)
+  }
 
   private var effectiveSpeed: Double {
     temporarySpeed ?? settings.speechSpeed
@@ -22,7 +27,7 @@ struct SpeakView: View {
       // Floating title bar
       titleBar
 
-      // Main content
+      // Main content – height is driven by text, animated by SwiftUI
       ZStack {
         // Native material background
         VisualEffectBackground()
@@ -49,8 +54,13 @@ struct SpeakView: View {
           toolbar
         }
       }
+      .frame(height: visibleContentHeight)
       .clipShape(RoundedRectangle(cornerRadius: 20))
+
+      // Push content to the top; transparent area below is click-through
+      Spacer(minLength: 0)
     }
+    .animation(.smooth(duration: 0.2), value: visibleContentHeight)
   }
 
   // MARK: - Title Bar

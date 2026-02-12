@@ -82,12 +82,9 @@ struct SpeakTextEditor: NSViewRepresentable {
       let height = textView.layoutManager?.usedRect(for: textView.textContainer!).height ?? 20
       let newTextHeight = max(height, 20)
 
-      // Update binding for SwiftUI state
+      // Update the binding; SwiftUI animates the visible content height.
+      // No window frame resize needed – the window stays at fixed max height.
       parent.textHeight = newTextHeight
-
-      // Synchronously resize the window in the same frame as the text layout
-      // change, preventing any one-frame jitter from SwiftUI's async state pipeline.
-      SpeakWindow.updateFrame(forTextHeight: newTextHeight)
     }
   }
 }
@@ -100,6 +97,19 @@ final class SubmitTextView: NSTextView {
   // Only claim hits inside the actual text content area;
   // padding (textContainerInset) falls through to the window
   // background, enabling drag via isMovableByWindowBackground.
+  // Suppress auto-scroll while the content area is still growing (below max
+  // height).  The SwiftUI animation smoothly reveals new content instead.
+  // Once at max height, auto-scroll is necessary for overflow.
+  override func scrollRangeToVisible(_ range: NSRange) {
+    guard let container = textContainer,
+          let layoutManager = layoutManager else { return }
+    layoutManager.ensureLayout(for: container)
+    let textHeight = layoutManager.usedRect(for: container).height
+    let contentHeight = SpeakWindow.contentHeight(forTextHeight: textHeight)
+    guard contentHeight >= SpeakWindow.contentMaxHeight else { return }
+    super.scrollRangeToVisible(range)
+  }
+
   override func hitTest(_ point: NSPoint) -> NSView? {
     let local = convert(point, from: superview)
     let inset = textContainerInset

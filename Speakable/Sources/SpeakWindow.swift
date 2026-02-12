@@ -1,6 +1,10 @@
 import AppKit
 
-/// Custom borderless window styled as a floating input panel
+/// Custom borderless window styled as a floating input panel.
+///
+/// The window always occupies its maximum frame size; the visible content
+/// area is animated by SwiftUI within this fixed frame, avoiding frame-resize
+/// jitter while keeping smooth height transitions.
 final class SpeakWindow: NSPanel {
 
   // MARK: - Layout Constants
@@ -11,37 +15,20 @@ final class SpeakWindow: NSPanel {
   static let titleBarHeight: CGFloat = 36
   static let titleBarGap: CGFloat = 8
 
-  static var windowMinHeight: CGFloat {
-    contentMinHeight + titleBarHeight + titleBarGap
-  }
-
-  static var windowMaxHeight: CGFloat {
+  /// Total fixed window height (always at maximum so SwiftUI can animate
+  /// content height within a stable frame).
+  static var fixedHeight: CGFloat {
     contentMaxHeight + titleBarHeight + titleBarGap
   }
 
   /// Toolbar height used by SpeakView (kept here as single source of truth)
   static let toolbarHeight: CGFloat = 54
 
-  /// Compute the total window height for a given text content height.
-  /// Used by the text editor coordinator to update the window frame synchronously.
-  static func windowHeight(forTextHeight textHeight: CGFloat) -> CGFloat {
-    let contentHeight = textHeight + toolbarHeight + 32
-    let clamped = min(max(contentHeight, contentMinHeight), contentMaxHeight)
-    return clamped + titleBarHeight + titleBarGap
-  }
-
-  /// Resize the window to fit the given text height, keeping the top edge fixed.
-  static func updateFrame(forTextHeight textHeight: CGFloat) {
-    guard let window = NSApp.windows.first(where: { $0 is SpeakWindow }) else { return }
-
-    let newHeight = windowHeight(forTextHeight: textHeight)
-    var frame = window.frame
-    let oldHeight = frame.height
-    guard abs(newHeight - oldHeight) > 1 else { return }
-
-    frame.origin.y += oldHeight - newHeight
-    frame.size.height = newHeight
-    window.setFrame(frame, display: true)
+  /// Compute the visible content-area height for a given text height.
+  static func contentHeight(forTextHeight textHeight: CGFloat) -> CGFloat {
+    // 32 = 2 × textContainerInset.height (16pt top + 16pt bottom)
+    let raw = textHeight + toolbarHeight + 32
+    return min(max(raw, contentMinHeight), contentMaxHeight)
   }
 
   // MARK: - Init
@@ -73,9 +60,10 @@ final class SpeakWindow: NSPanel {
 
     isRestorable = false
 
-    // Fixed width, variable height
-    minSize = NSSize(width: Self.fixedWidth, height: Self.windowMinHeight)
-    maxSize = NSSize(width: Self.fixedWidth, height: Self.windowMaxHeight)
+    // Fixed size – content animates within the frame
+    let fixedSize = NSSize(width: Self.fixedWidth, height: Self.fixedHeight)
+    minSize = fixedSize
+    maxSize = fixedSize
 
     // Center on screen
     center()
